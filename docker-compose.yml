@@ -1,0 +1,24 @@
+version: '3.9'
+
+services:
+  ambaari:
+    container_name: ambaari-management
+    image: ambaari:1.0
+    environment:
+      - PORT=${API_PORT}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 10
+    networks:
+      - internal
+    ports:
+      - ${API_PORT}:${API_PORT}
+
+networks:
+  internal:
