@@ -1,0 +1,33 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-ambaari-dev-204000-authRole",
+      "UnauthRoleArn": "arn:aws:iam::761621076820:role/amplify-ambaari-dev-204000-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::761621076820:role/amplify-ambaari-dev-204000-authRole",
+      "Region": "ap-south-1",
+      "DeploymentBucketName": "amplify-ambaari-dev-204000-deployment",
+      "UnauthRoleName": "amplify-ambaari-dev-204000-unauthRole",
+      "StackName": "amplify-ambaari-dev-204000",
+      "StackId": "arn:aws:cloudformation:ap-south-1:761621076820:stack/amplify-ambaari-dev-204000/98f55810-56d2-11ed-a9af-0a8a9b1469da",
+      "AmplifyAppId": "dfznzgbzyoe7q"
+    },
+    "categories": {
+      "auth": {
+        "ambaari49c91c97": {}
+      }
+    }
+  },
+  "prod": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-ambaari-prod-204348-authRole",
+      "UnauthRoleArn": "arn:aws:iam::761621076820:role/amplify-ambaari-prod-204348-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::761621076820:role/amplify-ambaari-prod-204348-authRole",
+      "Region": "ap-south-1",
+      "DeploymentBucketName": "amplify-ambaari-prod-204348-deployment",
+      "UnauthRoleName": "amplify-ambaari-prod-204348-unauthRole",
+      "StackName": "amplify-ambaari-prod-204348",
+      "StackId": "arn:aws:cloudformation:ap-south-1:761621076820:stack/amplify-ambaari-prod-204348/20290200-56d3-11ed-ba6f-0606adba749e",
+      "AmplifyAppId": "dfznzgbzyoe7q"
+    }
+  }
+}
