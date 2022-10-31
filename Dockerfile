@@ -14,7 +14,7 @@ RUN npm install
 COPY pages ./pages
 COPY public ./public
 COPY styles ./styles
-COPY next.config.js ./
+COPY *.js ./
 
 # build react app
 RUN yarn build
