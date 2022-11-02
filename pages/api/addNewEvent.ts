@@ -1,6 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import type { NextApiRequest, NextApiResponse } from "next";
-import { Success } from "../models/Success";
+import { Success } from "../../lib/models/Success";
 import { db } from "../../lib/db";
 
 export default async function handler(

@@ -11,7 +11,7 @@ import { withAuthenticator } from "@aws-amplify/ui-react";
 
 import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "react-query";
-import { UpcomingEventData } from "./models/UpcomingEventData";
+import { UpcomingEventData } from "../lib/models/UpcomingEventData";
 import moment from "moment";
 
 const fetchUpcomingEvents = async () => {
