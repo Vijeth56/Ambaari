@@ -1,4 +1,5 @@
 export type UpcomingEventData = {
+  bookingId: number;
   name: string;
   mobileNo: string;
   altMobileNo: string;
@@ -6,5 +7,6 @@ export type UpcomingEventData = {
   postalAddress: string;
   eventType: string;
   startDateTime: string;
+  singleDayEvent: boolean;
   endDateTime: string;
 };

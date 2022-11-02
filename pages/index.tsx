@@ -10,7 +10,9 @@ import { DatePicker, Calendar, Button, Modal, Input, Spin, Badge } from "antd";
 import { withAuthenticator } from "@aws-amplify/ui-react";
 
 import axios from "axios";
-import { useQuery, useMutation } from "react-query";
+import { useQuery, useMutation, useQueryClient } from "react-query";
+import { UpcomingEventData } from "./models/UpcomingEventData";
+import moment from "moment";
 
 const fetchUpcomingEvents = async () => {
   const res = await fetch("/api/getUpcomingEvents");
@@ -18,6 +20,7 @@ const fetchUpcomingEvents = async () => {
 };
 
 const Home = ({ signOut, user }: { signOut: any; user: any }) => {
+  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mobileNo, setMobileNo] = useState<string>();
   const [altMobileNo, setAltMobileNo] = useState<string>();
@@ -28,11 +31,19 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   const [dateTimeRange, setDateTimeRange] = useState<RangeValue<Moment>>();
   const [totalAmount, setTotalAmount] = useState<number>();
 
-  const mutation = useMutation("events", (newEvent: any) => {
-    return axios.post("/api/addNewEvent", newEvent);
+  const mutation = useMutation("events", {
+    mutationFn: (newEvent: any) => {
+      return axios.post("/api/addNewEvent", newEvent);
+    },
+    onSuccess: (_) => {
+      queryClient.invalidateQueries(["events"]);
+    },
   });
 
-  const { data, status } = useQuery("events", fetchUpcomingEvents);
+  const { data, status } = useQuery<UpcomingEventData[]>(
+    "events",
+    fetchUpcomingEvents
+  );
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -57,19 +68,46 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   };
 
   const { Search } = Input;
-
   const onSearch = (value: string) => console.log(value);
 
   const dateCellRender = (value: Moment) => {
     let listData: any[] = [];
-    switch (value.date()) {
-      case 8:
-        listData = [{ type: "warning", content: "This is warning event." }];
-        break;
+    if (data && data.length > 0) {
+      data.forEach((d) => {
+        let eStart = moment(d.startDateTime);
+        let eEnd = moment(d.endDateTime);
 
-      default:
-        listData = [];
-        break;
+        if (eStart.isSame(value, "date")) {
+          listData = [
+            {
+              type: "warning",
+              content: `Booking for ${d.name} (Starts: ${eStart.format(
+                "hh:mm a"
+              )})`,
+            },
+          ];
+        } else if (!d.singleDayEvent && eEnd.isSame(value, "date")) {
+          listData = [
+            {
+              type: "warning",
+              content: `Booking for ${d.name} (Ends: ${eEnd.format(
+                "hh:mm a"
+              )})`,
+            },
+          ];
+        } else if (
+          !d.singleDayEvent &&
+          eEnd.isAfter(value) &&
+          eStart.isBefore(value)
+        ) {
+          listData = [
+            {
+              type: "warning",
+              content: `Booking for ${d.name}(All day!)`,
+            },
+          ];
+        }
+      });
     }
 
     return (

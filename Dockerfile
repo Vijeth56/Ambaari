@@ -14,7 +14,11 @@ RUN npm install
 COPY pages ./pages
 COPY public ./public
 COPY styles ./styles
-COPY *.js ./
+COPY lib ./lib
+COPY aws-exports.js ./
+COPY next.config.js ./
+COPY .env.prod ./.env
+COPY yarn.lock ./
 
 # build react app
 RUN yarn build
