@@ -13,6 +13,7 @@ import {
   Input,
   Spin,
   Badge,
+  Alert,
   Popover,
 } from "antd";
 import dayjs, { Dayjs } from "dayjs";
@@ -39,8 +40,8 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   const [eventType, setEventType] = useState<string>();
   const [dateTimeRange, setDateTimeRange] = useState<RangeValue<Dayjs>>();
   const [totalAmount, setTotalAmount] = useState<number>();
-  
-  const [dateModalOpen, setDateModalOpen] = useState(false);
+
+  const [selectedValue, setSelectedValue] = useState<Dayjs>(() => dayjs());
 
   const mutation = useMutation("events", {
     mutationFn: (newEvent: any) => {
@@ -69,17 +70,13 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
       postalAddress,
       eventType,
       dateTimeRange,
-      totalAmount
+      totalAmount,
     });
     setEventModalOpen(false);
   };
 
   const handleEventModalCancel = () => {
     setEventModalOpen(false);
-  };
-
-  const handleDateModalCancel = () => {
-    setDateModalOpen(false);
   };
 
   const { Search } = Input;
@@ -97,6 +94,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
             {
               type: "warning",
               content: `${d.name} (Start: ${eStart.format("hh:mm a")})`,
+              bookingId: d.bookingId,
             },
           ];
         } else if (!d.singleDayEvent && eEnd.isSame(value, "date")) {
@@ -104,6 +102,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
             {
               type: "warning",
               content: `${d.name} (End: ${eEnd.format("hh:mm a")})`,
+              bookingId: d.bookingId,
             },
           ];
         } else if (
@@ -121,23 +120,32 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
       });
     }
 
-    return (
-      <ul className={styles.events}>
-        {listData.map((item) => (
-          <li key={item.content}>
-            <Badge
-              status={item.type as BadgeProps["status"]}
-              text={item.content}
-            />
-          </li>
-        ))}
-      </ul>
-    );
+    if (listData.length > 0) {
+      return (
+        <ul
+          className={styles.events}
+          style={{ height: "100%" }}
+          onClick={() => {
+            console.log(listData);
+          }}
+        >
+          {listData.map((item) => (
+            <li key={item.content}>
+              <Badge
+                status={item.type as BadgeProps["status"]}
+                text={item.content}
+              />
+            </li>
+          ))}
+        </ul>
+      );
+    } else {
+      return [];
+    }
   };
 
   const onDateSelect = (value: Dayjs) => {
-    console.log("Selected! ", value.format("DD/MM/YYYY"));
-    setDateModalOpen(true);
+    setSelectedValue(value);
   };
 
   return (
@@ -244,22 +252,37 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
             }}
           />
         </Modal>
-        <Modal
-          title="Booked Events"
-          open={dateModalOpen}
-          onCancel={handleDateModalCancel}
-          footer={[]}
-        ></Modal>
         {status === "loading" ? (
           <Spin>
             <Calendar />
           </Spin>
         ) : (
-          <Calendar
-            dateCellRender={dateCellRender}
-            onSelect={onDateSelect}
-            mode="month"
-          />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              flex: 1,
+            }}
+          >
+            <Alert
+              showIcon
+              type="info"
+              message={`Event Details for ${selectedValue?.format(
+                "YYYY-MM-DD"
+              )}`}
+              description="Click to view more details about events booked for this day!"
+              action={
+                <Button size="large" type="primary">
+                  VIEW
+                </Button>
+              }
+            />
+            <Calendar
+              dateCellRender={dateCellRender}
+              onSelect={onDateSelect}
+              mode="month"
+            />
+          </div>
         )}
       </main>
       <footer className={styles.footer}>
