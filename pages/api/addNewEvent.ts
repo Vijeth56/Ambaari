@@ -3,6 +3,11 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { Success } from "../../lib/models/Success";
 import { db } from "../../lib/db";
 
+const vContraintMap = new Map<string, string>();
+vContraintMap.set("Hall", "((0, 0), 0.5)");
+vContraintMap.set("Garden", "((1, 1), 0.5)");
+vContraintMap.set("H & G", "((0, 0), 1)");
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Success | Error>
@@ -27,6 +32,8 @@ export default async function handler(
         .insert({
           guest_info_id: guest_info_id,
           event_type: data.eventType,
+          venue_type: data.venueType,
+          _venue: vContraintMap.get(data.venueType) || "",
           from: data.dateTimeRange[0],
           to: data.dateTimeRange[1],
           total_fee: data.totalAmount,

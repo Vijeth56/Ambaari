@@ -4,8 +4,8 @@
  */
 exports.up = function (knex) {
     return knex.raw("ALTER TABLE event_booking ADD CONSTRAINT \
-    no_overlapping_times_for_event_type EXCLUDE USING \
-    gist(venue_type WITH =, tstzrange(\"from\", \"to\", '[)') WITH &&) WHERE (NOT deleted);"
+    no_overlapping_times_for_venue EXCLUDE USING \
+    gist(_venue WITH &&, tstzrange(\"from\", \"to\", '[)') WITH &&) WHERE (deleted_at IS NULL);"
     )
 };
 
@@ -14,5 +14,5 @@ exports.up = function (knex) {
  * @returns { Promise<void> }
  */
 exports.down = function (knex) {
-
+    return knex.raw("ALTER TABLE event_booking DROP CONSTRAINT IF EXISTS no_overlapping_times_for_venue")
 };

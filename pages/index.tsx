@@ -14,8 +14,10 @@ import {
   Spin,
   Badge,
   Alert,
-  Popover,
+  Radio,
+  RadioChangeEvent,
 } from "antd";
+
 import dayjs, { Dayjs } from "dayjs";
 
 import { withAuthenticator } from "@aws-amplify/ui-react";
@@ -29,6 +31,12 @@ const fetchUpcomingEvents = async () => {
   return res.json();
 };
 
+const venueOptions = [
+  { label: "Hall", value: "Hall" },
+  { label: "Garden", value: "Garden" },
+  { label: "Hall & Garden", value: "H & G" },
+];
+
 const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   const queryClient = useQueryClient();
   const [eventModelOpen, setEventModalOpen] = useState(false);
@@ -38,6 +46,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   const [emailAddress, setEmailAddress] = useState<string>();
   const [postalAddress, setPostalAddress] = useState<string>();
   const [eventType, setEventType] = useState<string>();
+  const [venueType, setVenueType] = useState("H & G");
   const [dateTimeRange, setDateTimeRange] = useState<RangeValue<Dayjs>>();
   const [totalAmount, setTotalAmount] = useState<number>();
 
@@ -61,7 +70,11 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
     setEventModalOpen(true);
   };
 
-  const handleOk = () => {
+  const onVenueTypeChange = ({ target: { value } }: RadioChangeEvent) => {
+    setVenueType(value);
+  };
+
+  const handleAddEvent = () => {
     mutation.mutateAsync({
       name,
       mobileNo,
@@ -69,6 +82,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
       emailAddress,
       postalAddress,
       eventType,
+      venueType,
       dateTimeRange,
       totalAmount,
     });
@@ -90,32 +104,26 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
         let eEnd = dayjs(d.endDateTime);
 
         if (eStart.isSame(value, "date")) {
-          listData = [
-            {
-              type: "warning",
-              content: `${d.name} (Start: ${eStart.format("hh:mm a")})`,
-              bookingId: d.bookingId,
-            },
-          ];
+          listData.push({
+            type: "warning",
+            content: `${d.venueType} (Start: ${eStart.format("hh:mm a")})`,
+            bookingId: d.bookingId,
+          });
         } else if (!d.singleDayEvent && eEnd.isSame(value, "date")) {
-          listData = [
-            {
-              type: "warning",
-              content: `${d.name} (End: ${eEnd.format("hh:mm a")})`,
-              bookingId: d.bookingId,
-            },
-          ];
+          listData.push({
+            type: "warning",
+            content: `${d.venueType} (End: ${eEnd.format("hh:mm a")})`,
+            bookingId: d.bookingId,
+          });
         } else if (
           !d.singleDayEvent &&
           eEnd.isAfter(value) &&
           eStart.isBefore(value)
         ) {
-          listData = [
-            {
-              type: "warning",
-              content: `${d.name} (All day!)`,
-            },
-          ];
+          listData.push({
+            type: "warning",
+            content: `${d.venueType} (All day!)`,
+          });
         }
       });
     }
@@ -174,7 +182,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
           size="large"
           onClick={showModal}
           style={{
-            alignSelf: "flex-center",
+            maxWidth: "240px",
             marginTop: "2em",
             marginBottom: "2em",
           }}
@@ -184,7 +192,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
         <Modal
           title="Event Info"
           open={eventModelOpen}
-          onOk={handleOk}
+          onOk={handleAddEvent}
           onCancel={handleEventModalCancel}
         >
           <Search
@@ -225,6 +233,14 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
             size="large"
             style={{ marginTop: "2em" }}
             onChange={(e) => setEventType(e.target.value)}
+          />
+          <Radio.Group
+            className={styles.radio}
+            options={venueOptions}
+            onChange={onVenueTypeChange}
+            value={`${venueType}`}
+            optionType="button"
+            buttonStyle="solid"
           />
           <DatePicker.RangePicker
             size="large"

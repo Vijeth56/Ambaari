@@ -8,5 +8,6 @@ export type UpcomingEventData = {
   eventType: string;
   startDateTime: string;
   singleDayEvent: boolean;
+  venueType: string;
   endDateTime: string;
 };
