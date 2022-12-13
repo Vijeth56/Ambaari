@@ -1,6 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import type { NextApiRequest, NextApiResponse } from "next";
-import { Success } from "../../lib/models/Success";
+import { AddEventResponse } from "../../lib/models/AddEventResponse";
 import { db } from "../../lib/db";
 
 const vContraintMap = new Map<string, string>();
@@ -10,7 +10,7 @@ vContraintMap.set("H & G", "((0, 0), 1)");
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<Success | Error>
+  res: NextApiResponse<AddEventResponse>
 ) {
   if (req.method === "POST") {
     let data = req.body;
@@ -44,16 +44,41 @@ export default async function handler(
       await trx.commit();
       console.log(eResult);
       return res.status(200).send({
+        error: false,
         msg: "New Event created!",
         guestId: guest_info_id,
         bookingId: event_booking_id,
       });
-    } catch (err) {
+    } catch (err: any) {
       await trx?.rollback();
+      if (
+        err?.constraint &&
+        err.constraint === "no_overlapping_times_for_venue"
+      ) {
+        return res.status(200).send({
+          error: true,
+          msg: "Venue is already booked for this time slot!",
+        });
+      } else if (
+        err?.constraint &&
+        err.constraint === "guest_info_mobile_no_unique"
+      ) {
+        return res.status(200).send({
+          error: true,
+          msg: "Mobile number is already taken!",
+        });
+      }
+
       console.log(err);
-      return res.status(400).send(new Error("Unknown Error!"));
+      return res.status(400).send({
+        error: true,
+        msg: "Some unknown error occurred! [Code: 100]",
+      });
     }
   } else {
-    return res.status(400).send(new Error("Invalid API"));
+    return res.status(400).send({
+      error: true,
+      msg: "Some unknown error occurred! [Code: 101]",
+    });
   }
 }

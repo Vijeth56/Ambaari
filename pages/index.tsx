@@ -4,6 +4,7 @@ import styles from "../styles/Home.module.css";
 import { PlusOutlined } from "@ant-design/icons";
 import type { BadgeProps } from "antd";
 import { RangeValue } from "rc-picker/lib/interface";
+import { AddEventResponse } from "../lib/models/AddEventResponse";
 
 import {
   DatePicker,
@@ -16,6 +17,7 @@ import {
   Alert,
   Radio,
   RadioChangeEvent,
+  message,
 } from "antd";
 
 import dayjs, { Dayjs } from "dayjs";
@@ -49,15 +51,26 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   const [venueType, setVenueType] = useState("H & G");
   const [dateTimeRange, setDateTimeRange] = useState<RangeValue<Dayjs>>();
   const [totalAmount, setTotalAmount] = useState<number>();
-
   const [selectedValue, setSelectedValue] = useState<Dayjs>(() => dayjs());
 
+  const [messageApi, contextHolder] = message.useMessage();
+
   const mutation = useMutation("events", {
-    mutationFn: (newEvent: any) => {
-      return axios.post("/api/addNewEvent", newEvent);
-    },
-    onSuccess: (_) => {
-      queryClient.invalidateQueries(["events"]);
+    mutationFn: async (newEvent: any) => {
+      const res = await axios.post<AddEventResponse>(
+        "/api/addNewEvent",
+        newEvent
+      );
+      if (res.data.error) {
+        messageApi.open({
+          type: "error",
+          content: res.data.msg,
+          className: "custom-class",
+          duration: 8,
+        });
+      } else {
+        queryClient.invalidateQueries(["events"]);
+      }
     },
   });
 
@@ -75,7 +88,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   };
 
   const handleAddEvent = () => {
-    mutation.mutateAsync({
+    mutation.mutate({
       name,
       mobileNo,
       altMobileNo,
@@ -158,6 +171,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
 
   return (
     <div className={styles.container}>
+      {contextHolder}
       <Head>
         <title>Ambaari</title>
         <meta
