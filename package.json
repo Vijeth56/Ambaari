@@ -10,6 +10,7 @@
     },
     "dependencies": {
         "@aws-amplify/ui-react": "^3.5.10",
+        "@aws-sdk/util-base64": "^3.208.0",
         "antd": "^5.0.3",
         "aws-amplify": "^4.3.42",
         "axios": "^1.1.3",
