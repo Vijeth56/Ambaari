@@ -310,6 +310,10 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
             <Calendar
               dateCellRender={dateCellRender}
               onSelect={onDateSelect}
+              validRange={[
+                dayjs().subtract(30, "days"),
+                dayjs().add(2, "years"),
+              ]}
               mode="month"
             />
           </div>
