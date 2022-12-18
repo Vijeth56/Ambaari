@@ -14,41 +14,56 @@ export default async function handler(
 ) {
   if (req.method === "POST") {
     let data = req.body;
+    let { existingGuest } = data;
     let trx;
     try {
       trx = await db.transaction();
-      let gResult = await trx("guest_info")
-        .insert({
-          name: data.name,
-          email: data.emailAddress,
-          mobile_no: data.mobileNo,
-          alt_mobile_no: data.altMobileNo,
-          postal_address: data.postalAddress,
-        })
-        .returning("guest_info_id");
+      let guestInfoId = -1;
 
-      const { guest_info_id } = gResult[0];
-      let eResult = await trx("event_booking")
-        .insert({
-          guest_info_id: guest_info_id,
-          event_type: data.eventType,
-          venue_type: data.venueType,
-          _venue: vContraintMap.get(data.venueType) || "",
-          from: data.dateTimeRange[0],
-          to: data.dateTimeRange[1],
-          total_fee: data.totalAmount,
-        })
-        .returning("event_booking_id");
+      if (existingGuest) {
+        guestInfoId = data.guestInfoId;
+      } else {
+        let gResult = await trx("guest_info")
+          .insert({
+            name: data.name,
+            email: data.emailAddress,
+            mobile_no: data.mobileNo,
+            alt_mobile_no: data.altMobileNo,
+            postal_address: data.postalAddress,
+          })
+          .returning("guest_info_id");
 
-      const { event_booking_id } = eResult[0];
-      await trx.commit();
-      console.log(eResult);
-      return res.status(200).send({
-        error: false,
-        msg: "New Event created!",
-        guestId: guest_info_id,
-        bookingId: event_booking_id,
-      });
+        guestInfoId = gResult[0].guest_info_id;
+      }
+
+      if (guestInfoId > 0) {
+        let eResult = await trx("event_booking")
+          .insert({
+            guest_info_id: guestInfoId,
+            event_type: data.eventType,
+            venue_type: data.venueType,
+            _venue: vContraintMap.get(data.venueType) || "",
+            from: data.dateTimeRange[0],
+            to: data.dateTimeRange[1],
+            total_fee: data.totalAmount,
+          })
+          .returning("event_booking_id");
+
+        const { event_booking_id } = eResult[0];
+        await trx.commit();
+        return res.status(200).send({
+          error: false,
+          msg: "New Event created!",
+          guestId: guestInfoId,
+          bookingId: event_booking_id,
+        });
+      } else {
+        await trx.rollback();
+        return res.status(200).send({
+          error: true,
+          msg: "Error while processing guest details!",
+        });
+      }
     } catch (err: any) {
       await trx?.rollback();
       if (

@@ -95,17 +95,29 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   };
 
   const handleAddEvent = () => {
-    mutation.mutate({
-      name,
-      mobileNo,
-      altMobileNo,
-      emailAddress,
-      postalAddress,
-      eventType,
-      venueType,
-      dateTimeRange,
-      totalAmount,
-    });
+    if (rGuestInfo) {
+      mutation.mutate({
+        existingGuest: true,
+        guestInfoId: rGuestInfo.guest_info_id,
+        eventType,
+        venueType,
+        dateTimeRange,
+        totalAmount,
+      });
+    } else {
+      mutation.mutate({
+        existingGuest: false,
+        name,
+        mobileNo,
+        altMobileNo,
+        emailAddress,
+        postalAddress,
+        eventType,
+        venueType,
+        dateTimeRange,
+        totalAmount,
+      });
+    }
     setEventModalOpen(false);
   };
 
