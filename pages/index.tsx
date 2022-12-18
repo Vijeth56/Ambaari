@@ -12,13 +12,15 @@ import {
   Button,
   Modal,
   Input,
-  Spin,
   Badge,
   Alert,
   Radio,
   RadioChangeEvent,
   message,
 } from "antd";
+
+import { AutoComplete, Spin } from "antd";
+import type { SelectProps } from "antd/es/select";
 
 import dayjs, { Dayjs } from "dayjs";
 
@@ -27,6 +29,7 @@ import { withAuthenticator } from "@aws-amplify/ui-react";
 import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { UpcomingEventData } from "../lib/models/UpcomingEventData";
+import { FetchUserResponse } from "../lib/models/FetchUserResponse";
 
 const fetchUpcomingEvents = async () => {
   const res = await fetch("/api/getUpcomingEvents");
@@ -53,6 +56,11 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   const [totalAmount, setTotalAmount] = useState<number>();
   const [selectedValue, setSelectedValue] = useState<Dayjs>(() => dayjs());
 
+  const [rGuestInfo, setRGuestInfo] = useState<any>();
+  const [guestOptions, setGuestOptions] = useState<
+    SelectProps<object>["options"]
+  >([]);
+
   const [messageApi, contextHolder] = message.useMessage();
 
   const mutation = useMutation("events", {
@@ -65,7 +73,6 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
         messageApi.open({
           type: "error",
           content: res.data.msg,
-          className: "custom-class",
           duration: 8,
         });
       } else {
@@ -107,7 +114,55 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   };
 
   const { Search } = Input;
-  const onSearch = (value: string) => console.log(value);
+  const onSearch = (value: string) => {
+    if (mobileNo && mobileNo.length >= 10) {
+      axios
+        .post<FetchUserResponse>("/api/fetchUsersByPhone", {
+          mobileNo,
+        })
+        .then((res) => res.data)
+        .then((res) => {
+          let options = searchResult(res.data || []);
+          setGuestOptions(options);
+        })
+        .catch((err) => console.log(err));
+    } else if (!(mobileNo == undefined || mobileNo.length === 0)) {
+      messageApi.error({
+        content: "Invalid mobile number",
+      });
+      setGuestOptions([]);
+    }
+  };
+
+  const searchResult = (data: any[]) =>
+    data.map((_, idx) => {
+      const category = data[idx].mobileNo;
+      return {
+        value: category,
+        label: (
+          <div
+            onClick={() => {
+              setRGuestInfo(data[idx]);
+            }}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 60,
+              justifyContent: "space-between",
+              border: "1px solid black",
+              borderRadius: 12,
+            }}
+          >
+            <span style={{ marginTop: 8, marginLeft: 8 }}>
+              {data[idx].name}
+            </span>
+            <span style={{ marginTop: 4, marginLeft: 8, marginBottom: 8 }}>
+              {data[idx].email}
+            </span>
+          </div>
+        ),
+      };
+    });
 
   const dateCellRender = (value: Dayjs) => {
     let listData: any[] = [];
@@ -209,18 +264,35 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
           onOk={handleAddEvent}
           onCancel={handleEventModalCancel}
         >
-          <Search
-            placeholder="Mobile No"
-            allowClear
-            enterButton="Find"
-            size="large"
-            onSearch={onSearch}
-            onChange={(e) => setMobileNo(e.target.value)}
-            style={{ marginTop: "2em" }}
-          />
+          <AutoComplete
+            dropdownMatchSelectWidth={true}
+            style={{ width: "100%" }}
+            options={guestOptions}
+          >
+            <Search
+              placeholder="Mobile No"
+              allowClear
+              enterButton="Find"
+              onSearch={onSearch}
+              size="large"
+              onChange={(e) => {
+                setMobileNo(e.target.value);
+                if (guestOptions) {
+                  setGuestOptions([]);
+                }
+
+                if (rGuestInfo) {
+                  setRGuestInfo(undefined);
+                }
+              }}
+              style={{ marginTop: "2em" }}
+            />
+          </AutoComplete>
           <Input
             placeholder="Alternate Mobile No:"
             size="large"
+            disabled={rGuestInfo}
+            value={rGuestInfo ? rGuestInfo.alt_mobile_no : altMobileNo}
             onChange={(e) => setAltMobileNo(e.target.value)}
             style={{ marginTop: "2em" }}
           />
@@ -228,18 +300,24 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
             placeholder="Name"
             size="large"
             style={{ marginTop: "2em" }}
+            disabled={rGuestInfo}
+            value={rGuestInfo ? rGuestInfo.name : name}
             onChange={(e) => setName(e.target.value)}
           />
           <Input
             placeholder="Email Address"
             size="large"
             style={{ marginTop: "2em" }}
+            disabled={rGuestInfo}
+            value={rGuestInfo ? rGuestInfo.email : emailAddress}
             onChange={(e) => setEmailAddress(e.target.value)}
           />
           <Input
             placeholder="Postal Address"
             size="large"
             style={{ marginTop: "2em" }}
+            disabled={rGuestInfo}
+            value={rGuestInfo ? rGuestInfo.postal_address : postalAddress}
             onChange={(e) => setPostalAddress(e.target.value)}
           />
           <Input
