@@ -7,6 +7,7 @@ import "@aws-amplify/ui-react/styles.css";
 Amplify.configure({ ...awsconfig, ssr: true });
 
 import { QueryClient, QueryClientProvider } from "react-query";
+import React from "react";
 
 export default function App({ Component, pageProps }: AppProps) {
   const queryClient = new QueryClient();
