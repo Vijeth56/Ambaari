@@ -23,10 +23,6 @@ export default async function handler(
         endDateTime: d.to,
         singleDayEvent,
         venueType: d.venue_type,
-        emailAddress: d.email,
-        mobileNo: d.mobile_no,
-        altMobileNo: d.alt_mobile_no,
-        postalAddress: d.postal_address,
       };
     });
 
