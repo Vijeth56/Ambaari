@@ -30,6 +30,7 @@ import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { UpcomingEventData } from "../lib/models/UpcomingEventData";
 import { FetchUserResponse } from "../lib/models/FetchUserResponse";
+import { RangePickerProps } from "antd/es/date-picker";
 
 const fetchUpcomingEvents = async () => {
   const res = await fetch("/api/getUpcomingEvents");
@@ -236,6 +237,15 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
     setSelectedValue(value);
   };
 
+  // eslint-disable-next-line arrow-body-style
+  const disabledDate: RangePickerProps["disabledDate"] = (current) => {
+    // Can not select days before today and today
+    return (
+      (current && current < dayjs().endOf("day")) ||
+      current > dayjs().add(2, "years")
+    );
+  };
+
   return (
     <div className={styles.container}>
       {contextHolder}
@@ -348,11 +358,11 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
           />
           <DatePicker.RangePicker
             size="large"
+            disabledDate={disabledDate}
             showTime
             use12Hours
-            format={"DD/MM/YY h:mm a"}
+            format={"DD/MM/YY h a"}
             showNow
-            minuteStep={30}
             style={{ width: "100%", marginTop: "2em" }}
             onChange={(e) => setDateTimeRange(e)}
           />
