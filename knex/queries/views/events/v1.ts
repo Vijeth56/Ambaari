@@ -4,8 +4,8 @@ module.exports.up = `
     SELECT
       e.event_booking_id,
       e.event_type,
-      e.from,
-      e.to,
+      e.event_start,
+      e.event_end,
       e.venue_type,
       g.name,
       g.email,

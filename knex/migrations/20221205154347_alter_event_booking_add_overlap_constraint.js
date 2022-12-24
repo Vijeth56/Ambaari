@@ -5,7 +5,7 @@
 exports.up = function (knex) {
     return knex.raw("ALTER TABLE event_booking ADD CONSTRAINT \
     no_overlapping_times_for_venue EXCLUDE USING \
-    gist(_venue WITH &&, tstzrange(\"from\", \"to\", '[)') WITH &&) WHERE (deleted_at IS NULL);"
+    gist(_venue WITH &&, tstzrange(\"event_start\", \"event_end\", '[)') WITH &&) WHERE (deleted_at IS NULL);"
     )
 };
 

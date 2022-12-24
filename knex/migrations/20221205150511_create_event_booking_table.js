@@ -9,8 +9,8 @@ exports.up = function (knex) {
             table.integer('guest_info_id').notNullable().references('guest_info_id').inTable('guest_info');
             table.string('event_type').notNullable();
             table.integer('total_fee').notNullable();
-            table.timestamp('from').notNullable();
-            table.timestamp('to').notNullable();
+            table.timestamp('event_start').notNullable();
+            table.timestamp('event_end').notNullable();
             table.text('venue_type').notNullable().defaultTo('H + G');
             table.specificType('_venue', 'circle').defaultTo('((0,0), 1)');
             table.timestamp('deleted_at').nullable();

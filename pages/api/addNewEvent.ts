@@ -43,8 +43,8 @@ export default async function handler(
             event_type: data.eventType,
             venue_type: data.venueType,
             _venue: vContraintMap.get(data.venueType) || "",
-            from: data.dateTimeRange[0],
-            to: data.dateTimeRange[1],
+            event_start: data.dateTimeRange[0],
+            event_end: data.dateTimeRange[1],
             total_fee: data.totalAmount,
           })
           .returning("event_booking_id");

@@ -9,18 +9,18 @@ export default async function handler(
   res: NextApiResponse<UpcomingEventData[] | Error>
 ) {
   try {
-    let data = await db("events_view").whereRaw(`"to" >= ? - ?::INTERVAL`, [
+    let data = await db("events_view").whereRaw(`"event_end" >= ? - ?::INTERVAL`, [
       db.fn.now(),
       "30 day",
     ]);
     let events = data.map<UpcomingEventData>((d) => {
-      let singleDayEvent = moment(d.from).isSame(moment(d.to), "day");
+      let singleDayEvent = moment(d.event_start).isSame(moment(d.event_end), "day");
       return {
         bookingId: d.event_booking_id,
         eventType: d.event_type,
         name: d.name,
-        startDateTime: d.from,
-        endDateTime: d.to,
+        startDateTime: d.event_start,
+        endDateTime: d.event_end,
         singleDayEvent,
         venueType: d.venue_type,
       };
