@@ -7,6 +7,7 @@ module.exports.up = `
       e.event_start,
       e.event_end,
       e.venue_type,
+      e.total_fee,
       g.name,
       g.email,
       g.mobile_no,

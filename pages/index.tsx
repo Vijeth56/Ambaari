@@ -5,6 +5,7 @@ import { PlusOutlined } from "@ant-design/icons";
 import type { BadgeProps } from "antd";
 import { RangeValue } from "rc-picker/lib/interface";
 import { AddEventResponse } from "../lib/models/AddEventResponse";
+import { DeleteEventResponse } from "../lib/models/DeleteEventResponse";
 
 import {
   DatePicker,
@@ -17,6 +18,9 @@ import {
   Radio,
   RadioChangeEvent,
   message,
+  List,
+  Skeleton,
+  Space,
 } from "antd";
 
 import { AutoComplete, Spin } from "antd";
@@ -28,13 +32,25 @@ import { withAuthenticator } from "@aws-amplify/ui-react";
 
 import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "react-query";
-import { UpcomingEventData } from "../lib/models/UpcomingEventData";
 import { FetchUserResponse } from "../lib/models/FetchUserResponse";
 import { RangePickerProps } from "antd/es/date-picker";
 
-const fetchUpcomingEvents = async () => {
-  const res = await fetch("/api/getUpcomingEvents");
-  return res.json();
+const fetchCalendarEvents = async () => {
+  const res = await fetch("/api/getCalendarEvents");
+  let jsonResult = await res.json();
+  return jsonResult;
+};
+
+const fetchEventDetails = async (eventIds: number[]) => {
+  if (eventIds && eventIds.length > 0) {
+    const res = await fetch(`/api/getEventDetails`, {
+      method: "post",
+      body: JSON.stringify({ ids: eventIds }),
+    });
+    let jsonResult = await res.json();
+    return jsonResult;
+  }
+  return [];
 };
 
 const venueOptions = [
@@ -45,7 +61,8 @@ const venueOptions = [
 
 const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   const queryClient = useQueryClient();
-  const [eventModelOpen, setEventModalOpen] = useState(false);
+  const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [showEventDetailModal, setShowEventDetailModal] = useState(false);
   const [mobileNo, setMobileNo] = useState<string>();
   const [altMobileNo, setAltMobileNo] = useState<string>();
   const [name, setName] = useState<string>();
@@ -55,7 +72,24 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   const [venueType, setVenueType] = useState("H & G");
   const [dateTimeRange, setDateTimeRange] = useState<RangeValue<Dayjs>>();
   const [totalAmount, setTotalAmount] = useState<number>();
-  const [selectedValue, setSelectedValue] = useState<Dayjs>(() => dayjs());
+  const [selectedValue, setSelectedValue] = useState<string>(() =>
+    dayjs().format("DD-MM-YYYY")
+  );
+  const [deleteEventForId, setDeleteEventForId] = useState<number>();
+
+  interface EventDetailType {
+    event_booking_id: number;
+    mobile_no: string;
+    alt_mobile_no: string;
+    name: string;
+    email: string;
+    event_type: string;
+    venue_type: string;
+    event_start: Date;
+    event_end: Date;
+    postal_address: string;
+    total_fee: number;
+  }
 
   const [rGuestInfo, setRGuestInfo] = useState<any>();
   const [guestOptions, setGuestOptions] = useState<
@@ -64,7 +98,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
 
   const [messageApi, contextHolder] = message.useMessage();
 
-  const mutation = useMutation("events", {
+  const addEventMutation = useMutation("events", {
     mutationFn: async (newEvent: any) => {
       const res = await axios.post<AddEventResponse>(
         "/api/addNewEvent",
@@ -77,19 +111,55 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
           duration: 8,
         });
       } else {
-        queryClient.invalidateQueries(["events"]);
+        queryClient.invalidateQueries("events");
       }
     },
   });
 
-  const { data, status } = useQuery<UpcomingEventData[]>(
-    "events",
-    fetchUpcomingEvents
-  );
+  const calendarEventsQuery = useQuery<any>("events", fetchCalendarEvents);
 
-  const showModal = () => {
-    setEventModalOpen(true);
-  };
+  const deleteEventMutation = useMutation("deleteEvent", {
+    mutationFn: async (id: number) => {
+      const res = await axios.post<DeleteEventResponse>("/api/deleteEvent", {
+        id: id,
+      });
+      setDeleteEventForId(undefined);
+      if (res.data.error) {
+        messageApi.open({
+          type: "error",
+          content: res.data.msg,
+          duration: 8,
+        });
+      } else {
+        queryClient.invalidateQueries("events");
+      }
+    },
+  });
+
+  const eventDetailsQuery = useQuery<EventDetailType[]>(
+    [
+      "events",
+      {
+        date: selectedValue,
+        ids:
+          calendarEventsQuery.data && calendarEventsQuery.data[selectedValue]
+            ? calendarEventsQuery.data[selectedValue].map((e: any) => e.id)
+            : [],
+      },
+    ],
+    () => {
+      let eventIds = [];
+      let { data } = calendarEventsQuery;
+      if (data && data[selectedValue]) {
+        eventIds = data[selectedValue].map((e: any) => e.id);
+      }
+      return fetchEventDetails(eventIds);
+    },
+    {
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+    }
+  );
 
   const onVenueTypeChange = ({ target: { value } }: RadioChangeEvent) => {
     setVenueType(value);
@@ -97,7 +167,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
 
   const handleAddEvent = () => {
     if (rGuestInfo) {
-      mutation.mutate({
+      addEventMutation.mutate({
         existingGuest: true,
         guestInfoId: rGuestInfo.guest_info_id,
         eventType,
@@ -106,7 +176,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
         totalAmount,
       });
     } else {
-      mutation.mutate({
+      addEventMutation.mutate({
         existingGuest: false,
         name,
         mobileNo,
@@ -119,15 +189,11 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
         totalAmount,
       });
     }
-    setEventModalOpen(false);
-  };
-
-  const handleEventModalCancel = () => {
-    setEventModalOpen(false);
+    setShowAddEventModal(false);
   };
 
   const { Search } = Input;
-  const onSearch = (value: string) => {
+  const onSearch = () => {
     if (mobileNo && mobileNo.length >= 10) {
       axios
         .post<FetchUserResponse>("/api/fetchUsersByPhone", {
@@ -179,45 +245,42 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
 
   const dateCellRender = (value: Dayjs) => {
     let listData: any[] = [];
-    if (data && data.length > 0) {
-      data.forEach((d) => {
-        let eStart = dayjs(d.startDateTime);
-        let eEnd = dayjs(d.endDateTime);
+    let { data } = calendarEventsQuery;
+    if (data && Object.keys(data).length > 0) {
+      let valueStr = value.format("DD-MM-YYYY");
+      let events = data[valueStr];
 
-        if (eStart.isSame(value, "date")) {
+      if (events) {
+        events.forEach((e: any) => {
+          let eStart = dayjs(e.start);
+          let eEnd = dayjs(e.end);
+
+          let sameAsStart = eStart.isSame(value, "date");
+          let sameAsEnd = eEnd.isSame(value, "date");
+
+          let description = "";
+          if (sameAsStart && sameAsEnd) {
+            description = `(${eStart.format("h a")} to ${eEnd.format("h a")})`;
+          } else if (sameAsStart) {
+            description = `(Start: ${eStart.format("h a")})`;
+          } else if (sameAsEnd) {
+            description = `(End: ${eEnd.format("h a")})`;
+          } else {
+            description = "(All day!)";
+          }
+
           listData.push({
             type: "warning",
-            content: `${d.venueType} (Start: ${eStart.format("hh:mm a")})`,
-            bookingId: d.bookingId,
+            content: `${e.venue} ${description}`,
+            bookingId: e.id,
           });
-        } else if (!d.singleDayEvent && eEnd.isSame(value, "date")) {
-          listData.push({
-            type: "warning",
-            content: `${d.venueType} (End: ${eEnd.format("hh:mm a")})`,
-            bookingId: d.bookingId,
-          });
-        } else if (
-          !d.singleDayEvent &&
-          eEnd.isAfter(value) &&
-          eStart.isBefore(value)
-        ) {
-          listData.push({
-            type: "warning",
-            content: `${d.venueType} (All day!)`,
-          });
-        }
-      });
+        });
+      }
     }
 
     if (listData.length > 0) {
       return (
-        <ul
-          className={styles.events}
-          style={{ height: "100%" }}
-          onClick={() => {
-            console.log(listData);
-          }}
-        >
+        <ul className={styles.events} style={{ height: "100%" }}>
           {listData.map((item) => (
             <li key={item.content}>
               <Badge
@@ -234,7 +297,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   };
 
   const onDateSelect = (value: Dayjs) => {
-    setSelectedValue(value);
+    setSelectedValue(value.format("DD-MM-YYYY"));
   };
 
   // eslint-disable-next-line arrow-body-style
@@ -271,7 +334,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
           type="primary"
           icon={<PlusOutlined />}
           size="large"
-          onClick={showModal}
+          onClick={() => setShowAddEventModal(true)}
           style={{
             maxWidth: "240px",
             marginTop: "2em",
@@ -282,9 +345,9 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
         </Button>
         <Modal
           title="Event Info"
-          open={eventModelOpen}
+          open={showAddEventModal}
           onOk={handleAddEvent}
-          onCancel={handleEventModalCancel}
+          onCancel={() => setShowAddEventModal(false)}
         >
           <AutoComplete
             dropdownMatchSelectWidth={true}
@@ -382,6 +445,98 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
             }}
           />
         </Modal>
+        <Modal
+          title="Event Details"
+          footer={null}
+          open={showEventDetailModal}
+          onCancel={() => setShowEventDetailModal(false)}
+        >
+          {deleteEventForId && deleteEventForId > 0 ? (
+            <Alert
+              message="Confirm"
+              description="Are you sure you want to delete the event?"
+              type="error"
+              action={
+                <Space direction="vertical">
+                  <Button
+                    size="small"
+                    type="primary"
+                    danger
+                    onClick={() => {
+                      deleteEventMutation.mutate(deleteEventForId);
+                    }}
+                  >
+                    YES
+                  </Button>
+                  <Button
+                    size="small"
+                    type="dashed"
+                    onClick={() => {
+                      setDeleteEventForId(undefined);
+                    }}
+                  >
+                    NO
+                  </Button>
+                </Space>
+              }
+            />
+          ) : (
+            []
+          )}
+
+          <List
+            className=""
+            itemLayout="horizontal"
+            dataSource={eventDetailsQuery.data}
+            loading={eventDetailsQuery.isLoading}
+            renderItem={(item) => (
+              <List.Item
+                actions={[
+                  <>
+                    <Button size="small" type="dashed" onClick={() => {}}>
+                      Edit
+                    </Button>
+                  </>,
+                  <>
+                    <Button
+                      size="small"
+                      type="primary"
+                      danger
+                      onClick={() => setDeleteEventForId(item.event_booking_id)}
+                    >
+                      Delete
+                    </Button>
+                  </>,
+                ]}
+              >
+                <Skeleton avatar title={false} loading={false} active>
+                  <List.Item.Meta
+                    title={`${item.name} (${item.event_type})`}
+                    description={
+                      <div
+                        className=""
+                        style={{ display: "flex", flexDirection: "column" }}
+                      >
+                        <span>Venue: {item.venue_type}</span>
+                        <span>
+                          Duration: &nbsp;
+                          {dayjs(item.event_start).format("DD/MM h a")}
+                          &nbsp;to&nbsp;
+                          {dayjs(item.event_end).format("DD/MM h a")}
+                        </span>
+                        <span>
+                          Mob: {item.mobile_no} / {item.alt_mobile_no}
+                        </span>
+                        <span>Email: {item.email}</span>
+                        <span>Total Fee: {item.total_fee}</span>
+                      </div>
+                    }
+                  />
+                </Skeleton>
+              </List.Item>
+            )}
+          />
+        </Modal>
         {status === "loading" ? (
           <Spin>
             <Calendar />
@@ -397,12 +552,23 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
             <Alert
               showIcon
               type="info"
-              message={`Event Details for ${selectedValue?.format(
-                "YYYY-MM-DD"
-              )}`}
-              description="Click to view more details about events booked for this day!"
+              message={`Show Events on ${selectedValue}`}
+              description="Click to view for more details about events booked on this day!"
               action={
-                <Button size="large" type="primary">
+                <Button
+                  size="large"
+                  type="primary"
+                  onClick={() => {
+                    if (
+                      eventDetailsQuery.data &&
+                      eventDetailsQuery.data.length > 0
+                    ) {
+                      setShowEventDetailModal(true);
+                    } else {
+                      messageApi.error("No Events Found!");
+                    }
+                  }}
+                >
                   VIEW
                 </Button>
               }
