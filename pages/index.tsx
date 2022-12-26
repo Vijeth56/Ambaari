@@ -6,6 +6,7 @@ import type { BadgeProps } from "antd";
 import { RangeValue } from "rc-picker/lib/interface";
 import { AddEventResponse } from "../lib/models/AddEventResponse";
 import { DeleteEventResponse } from "../lib/models/DeleteEventResponse";
+import { toINR } from "../lib/utils/NumberFormats";
 
 import {
   DatePicker,
@@ -528,7 +529,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
                           Mob: {item.mobile_no} / {item.alt_mobile_no}
                         </span>
                         <span>Email: {item.email}</span>
-                        <span>Total Fee: {item.total_fee}</span>
+                        <span>Total Fee: {toINR(item.total_fee)}</span>
                       </div>
                     }
                   />
