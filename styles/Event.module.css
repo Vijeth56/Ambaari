@@ -42,3 +42,13 @@
     height: 1em;
     margin-left: 0.5rem;
 }
+
+.radio {
+    display: flex;
+}
+
+.radio label {
+    margin-top: 2em;
+    flex: 1;
+    text-align: center;
+}

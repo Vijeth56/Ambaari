@@ -58,7 +58,7 @@ const fetchEvents = async (eventIds: number[]) => {
 const venueOptions = [
   { label: "Hall", value: "Hall" },
   { label: "Garden", value: "Garden" },
-  { label: "Hall & Garden", value: "H & G" },
+  { label: "Hall + G", value: "H & G" },
 ];
 
 const Home = ({ signOut, user }: { signOut: any; user: any }) => {
@@ -419,7 +419,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
             className={styles.radio}
             options={venueOptions}
             onChange={onVenueTypeChange}
-            value={`${venueType}`}
+            value={venueType}
             optionType="button"
             buttonStyle="solid"
           />

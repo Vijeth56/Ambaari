@@ -3,6 +3,7 @@ module.exports.up = `
   CREATE OR REPLACE VIEW "events_view" AS (
     SELECT
       e.event_booking_id,
+      e.guest_info_id,
       e.event_type,
       e.event_start,
       e.event_end,
