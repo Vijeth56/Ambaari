@@ -28,3 +28,22 @@
             display: none;
         }
         /* Hide Year button for Calendar */
+        
+        .ant-tabs .ant-tabs-tab {
+            font-size: 1.3em;
+        }
+        
+        .ant-tabs-nav {
+            width: 100% !important;
+        }
+        
+        .ant-tabs-tab {
+            display: flex;
+            flex: 1;
+            justify-content: center;
+        }
+        
+        .ant-tabs-nav>div:nth-of-type(1) {
+            display: unset !important;
+            width: 100% !important;
+        }

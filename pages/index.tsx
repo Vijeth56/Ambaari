@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { useRouter } from "next/router";
 import React, { useState } from "react";
 import styles from "../styles/Home.module.css";
 import { PlusOutlined } from "@ant-design/icons";
@@ -42,9 +43,9 @@ const fetchCalendarEvents = async () => {
   return jsonResult;
 };
 
-const fetchEventDetails = async (eventIds: number[]) => {
+const fetchEvents = async (eventIds: number[]) => {
   if (eventIds && eventIds.length > 0) {
-    const res = await fetch(`/api/getEventDetails`, {
+    const res = await fetch(`/api/getEventsInfo`, {
       method: "post",
       body: JSON.stringify({ ids: eventIds }),
     });
@@ -61,7 +62,9 @@ const venueOptions = [
 ];
 
 const Home = ({ signOut, user }: { signOut: any; user: any }) => {
+  const router = useRouter();
   const queryClient = useQueryClient();
+
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [showEventDetailModal, setShowEventDetailModal] = useState(false);
   const [mobileNo, setMobileNo] = useState<string>();
@@ -78,7 +81,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   );
   const [deleteEventForId, setDeleteEventForId] = useState<number>();
 
-  interface EventDetailType {
+  interface EventSummaryType {
     event_booking_id: number;
     mobile_no: string;
     alt_mobile_no: string;
@@ -137,7 +140,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
     },
   });
 
-  const eventDetailsQuery = useQuery<EventDetailType[]>(
+  const eventDetailsQuery = useQuery<EventSummaryType[]>(
     [
       "events",
       {
@@ -154,7 +157,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
       if (data && data[selectedValue]) {
         eventIds = data[selectedValue].map((e: any) => e.id);
       }
-      return fetchEventDetails(eventIds);
+      return fetchEvents(eventIds);
     },
     {
       refetchOnMount: false,
@@ -494,8 +497,14 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
               <List.Item
                 actions={[
                   <>
-                    <Button size="small" type="dashed" onClick={() => {}}>
-                      Edit
+                    <Button
+                      size="small"
+                      type="dashed"
+                      onClick={() =>
+                        router.push(`/event?id=${item.event_booking_id}`)
+                      }
+                    >
+                      More
                     </Button>
                   </>,
                   <>
@@ -538,7 +547,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
             )}
           />
         </Modal>
-        {status === "loading" ? (
+        {calendarEventsQuery.isLoading ? (
           <Spin>
             <Calendar />
           </Spin>
@@ -559,6 +568,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
                 <Button
                   size="large"
                   type="primary"
+                  style={{ alignSelf: "flex-end" }}
                   onClick={() => {
                     if (
                       eventDetailsQuery.data &&
