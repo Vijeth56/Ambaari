@@ -3,7 +3,7 @@ version: '3.9'
 services:
   ambaari:
     container_name: ambaari-management
-    image: ambaari:1.5
+    image: ambaari:1.6
     environment:
       - DB_HOST=${PROD_DB_HOST}
       - DB_USER=${PROD_DB_USER}
