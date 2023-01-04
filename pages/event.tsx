@@ -3,6 +3,8 @@ import { useState } from "react";
 import Head from "next/head";
 import axios from "axios";
 import dayjs, { Dayjs } from "dayjs";
+import { Transfer } from "antd";
+import type { TransferDirection } from "antd/es/transfer";
 
 import {
   Button,
@@ -19,7 +21,6 @@ import {
   Input,
   DatePicker,
   Radio,
-  RadioChangeEvent,
 } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import { withAuthenticator } from "@aws-amplify/ui-react";
@@ -30,6 +31,8 @@ import { RangePickerProps } from "antd/es/date-picker";
 
 import { FetchUserResponse } from "../lib/models/FetchUserResponse";
 import { DeleteEventResponse } from "../lib/models/DeleteEventResponse";
+import { BookRoomsResponse } from "../lib/models/BookRoomsResponse";
+import { ReleaseRoomsResponse } from "../lib/models/ReleaseRoomsResponse";
 import styles from "../styles/Event.module.css";
 import { toINR } from "../lib/utils/NumberFormats";
 
@@ -42,8 +45,8 @@ const fetchEventDetail = async (eventId: string) => {
         body: JSON.stringify({ id }),
       });
       let jsonResult = await res.json();
-      if (jsonResult && jsonResult.length > 0) {
-        return jsonResult[0];
+      if (jsonResult) {
+        return jsonResult;
       } else {
         return {};
       }
@@ -52,6 +55,35 @@ const fetchEventDetail = async (eventId: string) => {
   } catch (error) {
     console.log(error);
     return null;
+  }
+};
+
+const fetchAvailableRooms = async (
+  timeRange: RangeValue<Dayjs> | undefined
+) => {
+  try {
+    if (timeRange) {
+      const res = await fetch("/api/getAvailableRooms", {
+        method: "post",
+        body: JSON.stringify({
+          startTime: timeRange[0]?.minute(0).second(0),
+          endTime: timeRange[1]?.minute(0).second(0),
+        }),
+      });
+
+      let jsonResult = await res.json();
+
+      if (jsonResult && jsonResult.length > 0) {
+        return jsonResult;
+      } else {
+        return [];
+      }
+    }
+
+    return [];
+  } catch (error) {
+    console.log(error);
+    return [];
   }
 };
 
@@ -81,6 +113,12 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
   const [venueType, setVenueType] = useState<string>();
   const [dateTimeRange, setDateTimeRange] = useState<RangeValue<Dayjs>>();
   const [totalAmount, setTotalAmount] = useState<number>();
+
+  const [roomTimeRange, setRoomTimeRange] = useState<RangeValue<Dayjs>>();
+  const [roomsDataSource, setRoomsDataSource] = useState<any[]>();
+  const [bookedRooms, setBookedRooms] = useState<any[]>();
+  const [targetRoomKeys, setTargetRoomKeys] = useState<string[]>();
+  const [selectedRoomKeys, setSelectedRoomKeys] = useState<string[]>([]);
 
   const [newGuestId, setNewGuestId] = useState<number>();
   const [guestOptions, setGuestOptions] = useState<
@@ -160,7 +198,17 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
           setEventType(data?.event_type);
           setVenueType(data?.venue_type);
           setTotalAmount(data?.total_fee);
-          setDateTimeRange([dayjs(data?.event_start), dayjs(data?.event_end)]);
+
+          let timeRange: RangeValue<Dayjs> = [
+            dayjs(data?.event_start),
+            dayjs(data?.event_end),
+          ];
+          setDateTimeRange(timeRange);
+          setRoomTimeRange(timeRange);
+
+          let targetKeys = data?.rooms?.map((r: any) => r.key);
+          setTargetRoomKeys(targetKeys);
+          setBookedRooms(data?.rooms);
         }
       },
     }
@@ -191,7 +239,7 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
 
   const performEditGuest = async () => {
     try {
-      let res = await fetch("/api/alterGuestInfo", {
+      await fetch("/api/alterGuestInfo", {
         method: "POST",
         body: JSON.stringify({
           newGuestId: newGuestId,
@@ -205,7 +253,6 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
           postalAddress,
         }),
       });
-      console.log(res);
     } catch (err) {
       console.log(err);
       messageApi.error({
@@ -315,7 +362,7 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
 
   const performEditEvent = async () => {
     try {
-      let res = await fetch("/api/alterEventInfo", {
+      await fetch("/api/alterEventInfo", {
         method: "POST",
         body: JSON.stringify({
           eventId,
@@ -325,7 +372,6 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
           totalAmount,
         }),
       });
-      console.log(res);
     } catch (err) {
       console.log(err);
       messageApi.error({
@@ -394,6 +440,132 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
       />
     </Modal>
   );
+
+  // ----------------------------------- ROOM APIS -------------------------------------------
+  useQuery<any>(
+    ["available_rooms", { roomTimeRange }],
+    () => fetchAvailableRooms(roomTimeRange),
+    {
+      onSuccess(data) {
+        if (bookedRooms) {
+          setRoomsDataSource([...data, ...bookedRooms]);
+        } else {
+          setRoomsDataSource(data);
+        }
+      },
+    }
+  );
+
+  const bookSelectedRoomsForEvent = async ({
+    roomIds,
+    eventId,
+  }: {
+    roomIds: string[];
+    eventId: string;
+  }) => {
+    try {
+      const res = await axios.post<BookRoomsResponse>("/api/bookRooms", {
+        eventId,
+        roomIds,
+      });
+
+      if (res.data.error) {
+        messageApi.error({
+          content: res.data.msg,
+          duration: 8,
+        });
+      } else {
+        messageApi.info({
+          content: res.data.msg,
+          duration: 8,
+        });
+      }
+    } catch (err: any) {
+      console.log(err);
+      messageApi.error({
+        content: err?.message,
+        duration: 8,
+      });
+    }
+  };
+
+  const releaseSelectedRoomsForEvent = async ({
+    roomIds,
+    eventId,
+  }: {
+    roomIds: string[];
+    eventId: string;
+  }) => {
+    try {
+      const res = await axios.post<ReleaseRoomsResponse>("/api/releaseRooms", {
+        eventId,
+        roomIds,
+      });
+
+      if (res.data.error) {
+        messageApi.error({
+          content: res.data.msg,
+          duration: 8,
+        });
+      } else {
+        messageApi.info({
+          content: res.data.msg,
+          duration: 8,
+        });
+      }
+    } catch (err: any) {
+      console.log(err);
+      messageApi.error({
+        content: err?.message,
+        duration: 8,
+      });
+    }
+  };
+
+  const bookRoomsMutation = useMutation(
+    "book_rooms",
+    bookSelectedRoomsForEvent
+  );
+
+  const releaseRoomsMutation = useMutation(
+    "release_rooms",
+    releaseSelectedRoomsForEvent
+  );
+
+  const onChangeRooms = (
+    nextTargetKeys: string[],
+    direction: TransferDirection,
+    moveKeys: string[]
+  ) => {
+    if (direction == "right") {
+      bookRoomsMutation.mutate(
+        { roomIds: moveKeys, eventId },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries(["event_detail", eventId]);
+            queryClient.invalidateQueries(["available_rooms", dateTimeRange]);
+          },
+        }
+      );
+    } else {
+      releaseRoomsMutation.mutate(
+        { roomIds: moveKeys, eventId },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries(["event_detail", eventId]);
+            queryClient.invalidateQueries(["available_rooms", dateTimeRange]);
+          },
+        }
+      );
+    }
+  };
+
+  const onRoomSelectChange = (
+    sourceSelectedKeys: any[],
+    targetSelectedKeys: any[]
+  ) => {
+    setSelectedRoomKeys([...sourceSelectedKeys, ...targetSelectedKeys]);
+  };
 
   return (
     <div className={styles.container}>
@@ -552,12 +724,54 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
               {
                 label: `Room`,
                 key: "2",
-                children: `Content of Tab Pane 2`,
+                children: (
+                  <div
+                    className=""
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <DatePicker.RangePicker
+                      placeholder={["Checkin Date", "Checkout Date"]}
+                      disabled
+                      value={roomTimeRange}
+                      size="large"
+                      showTime
+                      use12Hours
+                      format={"DD/MM/YY h a"}
+                      showNow
+                      style={{ marginTop: "1em" }}
+                      onChange={(e) => setRoomTimeRange(e)}
+                    />
+
+                    <Transfer
+                      style={{ marginTop: "1.5em" }}
+                      dataSource={roomsDataSource}
+                      titles={["Available", "Booked"]}
+                      operations={["Book", "Release"]}
+                      targetKeys={targetRoomKeys}
+                      selectedKeys={selectedRoomKeys}
+                      onChange={onChangeRooms}
+                      onSelectChange={onRoomSelectChange}
+                      render={(item) =>
+                        item && item.value ? `Room ${item.value}` : ""
+                      }
+                    />
+                  </div>
+                ),
               },
               {
                 label: `Transactions`,
                 key: "3",
-                children: `Content of Tab Pane 3`,
+                children: (
+                  <div
+                    className=""
+                    style={{ display: "flex", justifyContent: "space-around" }}
+                  ></div>
+                ),
               },
             ]}
           />
