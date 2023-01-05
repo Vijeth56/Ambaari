@@ -6,6 +6,7 @@ import dayjs, { Dayjs } from "dayjs";
 import { Transfer } from "antd";
 import type { TransferDirection } from "antd/es/transfer";
 
+import Note from "./note";
 import {
   Button,
   message,
@@ -125,6 +126,8 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
     SelectProps<object>["options"]
   >([]);
 
+  let [notes, setNotes] = useState<Array<object>>([]);
+
   // eslint-disable-next-line arrow-body-style
   const disabledDate: RangePickerProps["disabledDate"] = (current) => {
     // Can not select days before today and today
@@ -213,6 +216,63 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
       },
     }
   );
+
+  const fetchNotes = async (eventId: string) => {
+    try {
+      if (eventId) {
+        let id = Number.parseInt(eventId);
+        const res = await fetch(`/api/getEventNotes`, {
+          method: "post",
+          body: JSON.stringify({ id }),
+        });
+        let jsonResult = await res.json();
+        if (jsonResult && jsonResult.length > 0) {
+          jsonResult = jsonResult.filter((note: any) => !note.deletedAt);
+          setNotes(jsonResult);
+        } else {
+          setNotes([]);
+        }
+      }
+    } catch (error) {
+      setNotes([]);
+      console.log(error);
+    }
+  };
+
+  useQuery<any>(["event_notes", eventId], () => fetchNotes(eventId));
+
+  const updateNotesArray = (note: any) => {
+    note["key"] = notes.length;
+    notes.push(note);
+    setNotes(notes);
+  };
+
+  const deleteNote = async (note: any) => {
+    try {
+      const res = await axios.post<DeleteEventResponse>(
+        "/api/deleteEventNote",
+        {
+          id: note.noteId,
+        }
+      );
+
+      if (res.data.error) {
+        messageApi.error({
+          content: res.data.msg,
+          duration: 8,
+        });
+      } else {
+        notes = notes.filter((_note: any) => note.noteId != _note.noteId);
+        setNotes(notes);
+      }
+    } catch (err) {
+      console.log(err);
+      messageApi.error({
+        content: "Failed to delete the event",
+        duration: 8,
+      });
+    }
+  };
 
   const deleteEvent = async (eventId: string) => {
     try {
@@ -651,10 +711,17 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
                 children: (
                   <div
                     className=""
-                    style={{ display: "flex", justifyContent: "space-around" }}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-around",
+                      flexDirection: "column",
+                    }}
                   >
-                    <Row>
-                      <Col style={{ marginTop: "12px", marginBottom: "12px" }}>
+                    <Row style={{ marginBottom: "48px" }}>
+                      <Col
+                        lg={12}
+                        style={{ marginTop: "12px", marginBottom: "12px" }}
+                      >
                         <Descriptions
                           title="Guest Info"
                           bordered
@@ -686,7 +753,10 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
                           </Descriptions.Item>
                         </Descriptions>
                       </Col>
-                      <Col style={{ marginTop: "12px", marginBottom: "12px" }}>
+                      <Col
+                        lg={12}
+                        style={{ marginTop: "12px", marginBottom: "12px" }}
+                      >
                         <Descriptions
                           title="Event Info"
                           bordered
@@ -716,6 +786,16 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
                             {toINR(data?.total_fee)}
                           </Descriptions.Item>
                         </Descriptions>
+                      </Col>
+                    </Row>
+                    <Row style={{ marginTop: "12px", marginBottom: "12px" }}>
+                      <Col lg={12}>
+                        <Note
+                          eventId={data?.event_booking_id}
+                          notes={notes}
+                          updateNotesArray={updateNotesArray}
+                          deleteNote={deleteNote}
+                        />
                       </Col>
                     </Row>
                   </div>
