@@ -7,6 +7,8 @@ import { Transfer } from "antd";
 import type { TransferDirection } from "antd/es/transfer";
 
 import Note from "./note";
+import Transaction from "./transaction";
+
 import {
   Button,
   message,
@@ -850,7 +852,9 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
                   <div
                     className=""
                     style={{ display: "flex", justifyContent: "space-around" }}
-                  ></div>
+                  >
+                    <Transaction eventAmount={totalAmount}></Transaction>
+                  </div>
                 ),
               },
             ]}
@@ -862,4 +866,5 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
   );
 };
 
-export default withAuthenticator(Event);
+// export default withAuthenticator(Event);
+export default Event;
