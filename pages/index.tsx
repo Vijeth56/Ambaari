@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "../styles/Home.module.css";
 import { PlusOutlined } from "@ant-design/icons";
 import type { BadgeProps } from "antd";
@@ -8,6 +8,7 @@ import { RangeValue } from "rc-picker/lib/interface";
 import { AddEventResponse } from "../lib/models/AddEventResponse";
 import { DeleteEventResponse } from "../lib/models/DeleteEventResponse";
 import { toINR } from "../lib/utils/NumberFormats";
+import useWindowDimensions from "./useWindowDimensions";
 
 import {
   DatePicker,
@@ -64,6 +65,7 @@ const venueOptions = [
 const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { width, height } = useWindowDimensions();
 
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [showEventDetailModal, setShowEventDetailModal] = useState(false);
@@ -250,6 +252,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   const dateCellRender = (value: Dayjs) => {
     let listData: any[] = [];
     let { data } = calendarEventsQuery;
+
     if (data && Object.keys(data).length > 0) {
       let valueStr = value.format("DD-MM-YYYY");
       let events = data[valueStr];
@@ -275,28 +278,36 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
 
           listData.push({
             type: "warning",
-            content: `${e.venue} ${description}`,
+            content: `${description}`,
             bookingId: e.id,
           });
         });
       }
     }
 
-    if (listData.length > 0) {
-      return (
-        <ul className={styles.events} style={{ height: "100%" }}>
-          {listData.map((item) => (
-            <li key={item.content}>
-              <Badge
-                status={item.type as BadgeProps["status"]}
-                text={item.content}
-              />
-            </li>
-          ))}
-        </ul>
-      );
+    if (width && width < 750) {
+      if (listData.length > 0) {
+        return <p style={{ color: "red" }}>{value.format("DD")}</p>;
+      } else {
+        return value.format("DD");
+      }
     } else {
-      return [];
+      if (listData.length > 0) {
+        return (
+          <ul className={styles.events} style={{ height: "100%" }}>
+            {listData.map((item) => (
+              <li key={item.content}>
+                <Badge
+                  status={item.type as BadgeProps["status"]}
+                  text={item.content}
+                />
+              </li>
+            ))}
+          </ul>
+        );
+      } else {
+        return [];
+      }
     }
   };
 
@@ -311,6 +322,47 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
       (current && current < dayjs().endOf("day")) ||
       current > dayjs().add(2, "years")
     );
+  };
+
+  const getLoadingView = () => {
+    if (width && width >= 750) {
+      return (
+        <Spin>
+          <Calendar />
+        </Spin>
+      );
+    } else if (width && width < 750) {
+      return (
+        <Spin>
+          <Calendar fullscreen={false} />
+        </Spin>
+      );
+    } else {
+      <Spin />;
+    }
+  };
+
+  const getCalendarEventsView = () => {
+    if (width && width < 750) {
+      return (
+        <Calendar
+          dateFullCellRender={dateCellRender}
+          onSelect={onDateSelect}
+          fullscreen={false}
+          validRange={[dayjs().subtract(30, "days"), dayjs().add(2, "years")]}
+          mode="month"
+        />
+      );
+    } else {
+      return (
+        <Calendar
+          dateCellRender={dateCellRender}
+          onSelect={onDateSelect}
+          validRange={[dayjs().subtract(30, "days"), dayjs().add(2, "years")]}
+          mode="month"
+        />
+      );
+    }
   };
 
   return (
@@ -548,9 +600,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
           />
         </Modal>
         {calendarEventsQuery.isLoading ? (
-          <Spin>
-            <Calendar />
-          </Spin>
+          getLoadingView()
         ) : (
           <div
             style={{
@@ -584,30 +634,11 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
                 </Button>
               }
             />
-            <Calendar
-              dateCellRender={dateCellRender}
-              onSelect={onDateSelect}
-              validRange={[
-                dayjs().subtract(30, "days"),
-                dayjs().add(2, "years"),
-              ]}
-              mode="month"
-            />
+            {getCalendarEventsView()}
           </div>
         )}
       </main>
-      <footer className={styles.footer}>
-        {/* <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{" "}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a> */}
-      </footer>
+      <footer className={styles.footer}></footer>
     </div>
   );
 };
