@@ -11,11 +11,8 @@ export default async function handler(
     let data = req.body;
 
     let { eventId, transaction } = data;
-    console.log(data);
-    let trx;
     try {
-      trx = await db.transaction();
-      let eResult = await trx("transactions")
+      let eResult = await db("transactions")
         .insert({
           event_booking_id: data.eventId,
           message: data.message,
@@ -25,16 +22,14 @@ export default async function handler(
         .returning("transaction_id");
 
       const { transaction_id } = eResult[0];
-      await trx.commit();
       return res.status(200).send({
         error: false,
-        msg: "New Note created!",
+        msg: "New Transaction created!",
         transactionId: transaction_id,
         eventId: eventId,
         transaction: transaction,
       });
     } catch (err: any) {
-      await trx?.rollback();
       console.log(err);
       return res.status(400).send({
         error: true,

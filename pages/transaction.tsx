@@ -162,25 +162,7 @@ const Transaction = ({ eventAmount }: any) => {
             <Option value="others">others</Option>
           </Select>
         </Form.Item>
-        <Form.Item
-          label="Amount"
-          name="amount"
-          rules={[
-            {
-              message: "Incorrect amount entered",
-              validator: (_, value) => {
-                if (
-                  value < eventAmount &&
-                  value < totalOutstandingAmount[0].totalPendingAmount
-                ) {
-                  return Promise.resolve();
-                } else {
-                  return Promise.reject("Incorrect amount entered");
-                }
-              },
-            },
-          ]}
-        >
+        <Form.Item label="Amount" name="amount">
           <InputNumber />
         </Form.Item>
         <Form.Item label="" colon={false}>
