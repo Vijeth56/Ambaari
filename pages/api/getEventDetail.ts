@@ -11,23 +11,8 @@ export default async function handler(
     if (eventId > 0) {
       let data = await db("events_view").where("event_booking_id", eventId);
       if (data && data.length > 0) {
-        let roomsData = await db("room_bookings_view").where(
-          "event_id",
-          eventId
-        );
-
-        let roomsInfo =
-          roomsData && roomsData.length > 0
-            ? roomsData.map((d) => ({
-                key: d.room_id,
-                value: d.room_no,
-                floor: d.floor,
-              }))
-            : [];
-
         let eventInfo = {
           ...data[0],
-          rooms: roomsInfo,
         };
         res.status(200).json(eventInfo);
       } else {
