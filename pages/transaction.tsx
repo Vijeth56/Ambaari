@@ -19,21 +19,23 @@ const fetchEventTransactions = async (eventId: string) => {
         method: "post",
         body: JSON.stringify({ id }),
       });
+      console.log(res);
       let jsonResult = await res.json();
-      if (jsonResult) {
+      console.log("res.json()", jsonResult);
+      if (Array.isArray(jsonResult)) {
         return jsonResult;
       } else {
-        return {};
+        return [];
       }
     }
-    return null;
+    return [];
   } catch (error) {
     console.log(error);
-    return null;
+    return [];
   }
 };
 
-const Transaction = ({ eventAmount }: any) => {
+const Transaction = ({ eventAmount = 0 }: any) => {
   const router = useRouter();
   const [messageApi, contextHolder] = message.useMessage();
   const queryClient = useQueryClient();
@@ -90,11 +92,14 @@ const Transaction = ({ eventAmount }: any) => {
       onSuccess(transactions) {
         let totalPaidAmount = 0;
         let totalPendingAmount = 0;
-        transactions = transactions.map((transaction: any, index: any) => {
-          transaction.key = index;
-          totalPaidAmount += transaction.amount;
-          return transaction;
-        });
+        if (transactions && transactions.length > 0) {
+          transactions = transactions.map((transaction: any, index: any) => {
+            transaction.key = index;
+            totalPaidAmount += transaction.amount;
+            return transaction;
+          });
+        }
+
         totalPendingAmount = eventAmount - totalPaidAmount;
         setTotalOutstandingAmount([
           {
@@ -104,7 +109,6 @@ const Transaction = ({ eventAmount }: any) => {
             totalPendingAmount: totalPendingAmount,
           },
         ]);
-        console.log(totalOutstandingAmount);
       },
     }
   );
