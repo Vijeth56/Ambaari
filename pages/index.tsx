@@ -8,7 +8,6 @@ import { RangeValue } from "rc-picker/lib/interface";
 import { AddEventResponse } from "../lib/models/AddEventResponse";
 import { DeleteEventResponse } from "../lib/models/DeleteEventResponse";
 import { toINR } from "../lib/utils/NumberFormats";
-import useWindowDimensions from "./useWindowDimensions";
 
 import {
   DatePicker,
@@ -61,6 +60,31 @@ const venueOptions = [
   { label: "Garden", value: "Garden" },
   { label: "Hall + G", value: "H & G" },
 ];
+
+type WindowDimentions = {
+  width: number | undefined;
+  height: number | undefined;
+};
+
+const useWindowDimensions = (): WindowDimentions => {
+  const [windowDimensions, setWindowDimensions] = useState<WindowDimentions>({
+    width: undefined,
+    height: undefined,
+  });
+  useEffect(() => {
+    function handleResize(): void {
+      setWindowDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return (): void => window.removeEventListener("resize", handleResize);
+  }, []); // Empty array ensures that effect is only run on mount
+
+  return windowDimensions;
+};
 
 const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   const router = useRouter();
