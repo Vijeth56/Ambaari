@@ -98,6 +98,8 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   }
 
   const [rGuestInfo, setRGuestInfo] = useState<any>();
+  const [dateStyle, setDateStyle] = useState<any>({});
+
   const [guestOptions, setGuestOptions] = useState<
     SelectProps<object>["options"]
   >([]);
@@ -252,9 +254,17 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   const dateCellRender = (value: Dayjs) => {
     let listData: any[] = [];
     let { data } = calendarEventsQuery;
+    let style: any = { padding: "6px" };
 
     if (data && Object.keys(data).length > 0) {
       let valueStr = value.format("DD-MM-YYYY");
+      if (valueStr === selectedValue) {
+        style = {
+          ...style,
+          backgroundColor: "#ADD8E6",
+          borderRadius: "4px",
+        };
+      }
       let events = data[valueStr];
 
       if (events) {
@@ -269,11 +279,11 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
           if (sameAsStart && sameAsEnd) {
             description = `(${eStart.format("h a")} to ${eEnd.format("h a")})`;
           } else if (sameAsStart) {
-            description = `(Start: ${eStart.format("h a")})`;
+            description = `${e.venue} (Start: ${eStart.format("h a")})`;
           } else if (sameAsEnd) {
-            description = `(End: ${eEnd.format("h a")})`;
+            description = `${e.venue} (End: ${eEnd.format("h a")})`;
           } else {
-            description = "(All day!)";
+            description = `${e.venue} (All day!)`;
           }
 
           listData.push({
@@ -287,9 +297,13 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
 
     if (width && width < 750) {
       if (listData.length > 0) {
-        return <p style={{ color: "red" }}>{value.format("DD")}</p>;
+        return <p style={{ color: "red", ...style }}>{value.format("DD")}</p>;
       } else {
-        return value.format("DD");
+        return (
+          <p key={value.format("DD-MM-YYYY")} style={style}>
+            {value.format("DD")}
+          </p>
+        );
       }
     } else {
       if (listData.length > 0) {
@@ -541,7 +555,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
           )}
 
           <List
-            className=""
+            className="eventdetailslist"
             itemLayout="horizontal"
             dataSource={eventDetailsQuery.data}
             loading={eventDetailsQuery.isLoading}
@@ -612,13 +626,12 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
             <Alert
               showIcon
               type="info"
-              message={`Show Events on ${selectedValue}`}
+              message={`${selectedValue}`}
               description="Click to view for more details about events booked on this day!"
               action={
                 <Button
                   size="large"
                   type="primary"
-                  style={{ alignSelf: "flex-end" }}
                   onClick={() => {
                     if (
                       eventDetailsQuery.data &&
