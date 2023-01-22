@@ -15,13 +15,12 @@ const fetchEventTransactions = async (eventId: string) => {
   try {
     if (eventId) {
       let id = Number.parseInt(eventId);
-      const res = await fetch(`/api/getEventTransactions`, {
+      const res = await fetch(`/api/getEventTransactionsById`, {
         method: "post",
         body: JSON.stringify({ id }),
       });
       console.log(res);
       let jsonResult = await res.json();
-      console.log("res.json()", jsonResult);
       if (Array.isArray(jsonResult)) {
         return jsonResult;
       } else {
