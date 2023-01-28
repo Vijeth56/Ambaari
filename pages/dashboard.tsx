@@ -70,8 +70,16 @@ const fetchEventTransactions = async (
   }
 };
 
-const barChart = {
-  labels: [],
+const barChart1 = {
+  labels: [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ],
   datasets: [
     {
       label: "Total Events",
@@ -82,7 +90,7 @@ const barChart = {
   ],
 };
 
-const lineChart = {
+const barChart2 = {
   labels: [],
   datasets: [
     {
@@ -112,8 +120,8 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
     totalAmountPending: 0,
   });
 
-  const [barChart1Data, setBarchart1Data] = useState(barChart);
-  const [barChart2Data, setBarchart2Data] = useState(lineChart);
+  const [barChart1Data, setBarchart1Data] = useState(barChart1);
+  const [barChart2Data, setBarchart2Data] = useState(barChart2);
 
   const onSelectMonth = (month: string) => {
     const startDate = moment([moment().year(), labels.indexOf(month)]).format(
@@ -130,7 +138,7 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
     setVenueType(event);
   };
 
-  const setBarchart1 = (eventsByDate) => {
+  const setBarchart1 = (eventsByDate: any) => {
     let labels = Object.keys(eventsByDate);
     let values = labels.map((date) => {
       return eventsByDate[date];
@@ -140,57 +148,76 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
     setBarchart1Data(barChart1Data);
   };
 
-  const setBarchart2 = (amountByDate) => {
-    let labels = Object.keys(amountByDate);
-    let values = labels.map((date) => {
-      return amountByDate[date];
+  const setBarchart2 = (amountByPaymentMode: any) => {
+    let labels = Object.keys(amountByPaymentMode);
+    let values = labels.map((paymentType) => {
+      return amountByPaymentMode[paymentType];
     });
     barChart2Data["labels"] = labels;
     barChart2Data["datasets"][0]["data"] = values;
     setBarchart2Data(barChart2Data);
   };
 
+  const buildAmountByPaymentModes = (
+    amountByPaymentMode: any,
+    eventTransaction: any
+  ) => {
+    if (
+      eventTransaction.paymentType &&
+      !(eventTransaction.paymentType in amountByPaymentMode)
+    ) {
+      amountByPaymentMode[eventTransaction.paymentType] = 0;
+      amountByPaymentMode[eventTransaction.paymentType] +=
+        eventTransaction.totalAmount;
+    } else {
+      amountByPaymentMode[eventTransaction.paymentType] +=
+        eventTransaction.totalAmount;
+    }
+
+    return amountByPaymentMode;
+  };
+
+  const buildEventsByDays = (eventsByDay: any, eventTransaction: any) => {
+    let eventDay = moment(eventTransaction["eventStart"]).format("dddd");
+    if (!(eventDay in eventsByDay)) {
+      eventsByDay[eventDay] = 0;
+      eventsByDay[eventDay] += 1;
+    } else {
+      eventsByDay[eventsByDay] += 1;
+    }
+    return eventsByDay;
+  };
   const { data: eventsTransactions, isLoading } = useQuery<any>(
     ["events_transactions", startDate, endDate, venueType],
     () => fetchEventTransactions(startDate, endDate, venueType),
     {
       onSuccess(eventsTransactions) {
-        let eventList = [];
+        let eventList: Array<String> = [];
         let totalAmountPaid = 0;
         let totalFee = 0;
-        console.log(eventsTransactions);
-        let eventsByDate = {};
-        let amountByDate = {};
+        let eventsByDay: any = {};
+        let amountByPaymentMode: any = {};
 
-        eventsTransactions.map((eventTransaction) => {
+        eventsTransactions.map((eventTransaction: any) => {
           if (!eventList.includes(eventTransaction.eventBookingId)) {
             eventList.push(eventTransaction.eventBookingId);
             totalFee += eventTransaction.totalFee;
-            console.log(eventList);
-          }
-          let eventDate = moment(eventTransaction["eventStart"]).format(
-            "YYYY-MM-DD"
-          );
-
-          if (!(eventDate in eventsByDate)) {
-            eventsByDate[eventDate] = 0;
-            eventsByDate[eventDate] += 1;
-          } else {
-            eventsByDate[eventDate] += 1;
           }
 
-          if (!(eventDate in amountByDate)) {
-            amountByDate[eventDate] = 0;
-            amountByDate[eventDate] += eventTransaction.totalAmount;
-          } else {
-            amountByDate[eventDate] += eventTransaction.totalAmount;
-          }
+          buildEventsByDays(eventsByDay, eventTransaction);
 
+          if (eventTransaction.paymentType)
+            amountByPaymentMode = buildAmountByPaymentModes(
+              amountByPaymentMode,
+              eventTransaction
+            );
           totalAmountPaid += eventTransaction.totalAmount;
         });
+
         let totalPending = totalFee - totalAmountPaid;
-        setBarchart1(eventsByDate);
-        setBarchart2(amountByDate);
+
+        setBarchart1(eventsByDay);
+        setBarchart2(amountByPaymentMode);
         setEventsMetrics({
           totalEvents: eventList.length,
           totalFee: totalFee,
