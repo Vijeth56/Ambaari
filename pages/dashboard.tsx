@@ -16,7 +16,7 @@ import {
   Legend,
   BarElement,
 } from "chart.js";
-import { Line, Bar } from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
 import { useState } from "react";
 
 ChartJS.register(
@@ -29,11 +29,6 @@ ChartJS.register(
   Tooltip,
   Legend
 );
-
-export const options = {
-  responsive: false,
-  maintainAspectRatio: false,
-};
 
 const labels = [
   "January",
@@ -68,6 +63,50 @@ const fetchEventTransactions = async (
     console.log(error);
     return [];
   }
+};
+
+const barChart1Options = {
+  responsive: false,
+  maintainAspectRatio: false,
+  scales: {
+    y: {
+      min: 0,
+      max: 100,
+      stepSize: 20,
+      title: {
+        display: true,
+        text: "Events",
+      },
+    },
+    x: {
+      title: {
+        display: true,
+        text: "Days",
+      },
+    },
+  },
+};
+
+const barChart2Options = {
+  responsive: false,
+  maintainAspectRatio: false,
+  scales: {
+    y: {
+      min: 0,
+      max: 1000000,
+      stepSize: 100000,
+      title: {
+        display: true,
+        text: "Amount",
+      },
+    },
+    x: {
+      title: {
+        display: true,
+        text: "Payments",
+      },
+    },
+  },
 };
 
 const barChart1 = {
@@ -183,7 +222,7 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
       eventsByDay[eventDay] = 0;
       eventsByDay[eventDay] += 1;
     } else {
-      eventsByDay[eventsByDay] += 1;
+      eventsByDay[eventDay] += 1;
     }
     return eventsByDay;
   };
@@ -197,14 +236,13 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
         let totalFee = 0;
         let eventsByDay: any = {};
         let amountByPaymentMode: any = {};
-
+        console.log(eventsTransactions);
         eventsTransactions.map((eventTransaction: any) => {
           if (!eventList.includes(eventTransaction.eventBookingId)) {
             eventList.push(eventTransaction.eventBookingId);
             totalFee += eventTransaction.totalFee;
+            eventsByDay = buildEventsByDays(eventsByDay, eventTransaction);
           }
-
-          buildEventsByDays(eventsByDay, eventTransaction);
 
           if (eventTransaction.paymentType)
             amountByPaymentMode = buildAmountByPaymentModes(
@@ -303,7 +341,7 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
           <Row>
             <Col md={24} lg={12}>
               <Bar
-                options={options}
+                options={barChart1Options}
                 data={barChart1Data}
                 height={400}
                 width={700}
@@ -313,7 +351,7 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
             </Col>
             <Col md={24} lg={12}>
               <Bar
-                options={options}
+                options={barChart2Options}
                 data={barChart2Data}
                 height={400}
                 width={700}
