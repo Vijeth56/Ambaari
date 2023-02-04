@@ -15,8 +15,9 @@ import {
   Tooltip,
   Legend,
   BarElement,
+  ArcElement,
 } from "chart.js";
-import { Bar } from "react-chartjs-2";
+import { Bar, Pie } from "react-chartjs-2";
 import { useState } from "react";
 
 ChartJS.register(
@@ -25,6 +26,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend
@@ -45,15 +47,11 @@ const labels = [
   "December",
 ];
 
-const fetchEventTransactions = async (
-  startDate: String,
-  endDate: String,
-  venueType: String
-) => {
+const fetchEventTransactions = async (startDate: String, endDate: String) => {
   try {
     const res = await fetch(`/api/getEventsTransactions`, {
       method: "post",
-      body: JSON.stringify({ startDate, endDate, venueType }),
+      body: JSON.stringify({ startDate, endDate }),
     });
     let jsonResult = await res.json();
     if (jsonResult && Array.isArray(jsonResult)) {
@@ -65,6 +63,10 @@ const fetchEventTransactions = async (
   }
 };
 
+const pieChartOptions = {
+  responsive: false,
+  maintainAspectRatio: false,
+};
 const barChart1Options = {
   responsive: false,
   maintainAspectRatio: false,
@@ -140,6 +142,28 @@ const barChart2 = {
     },
   ],
 };
+
+const pieChart = {
+  labels: ["Hall", "Garden", "Hall+Garden"],
+  datasets: [
+    {
+      label: "No of events",
+      data: [],
+      backgroundColor: [
+        "rgba(255, 99, 132, 0.2)",
+        "rgba(54, 162, 235, 0.2)",
+        "rgba(255, 206, 86, 0.2)",
+      ],
+      borderColor: [
+        "rgba(255, 99, 132, 1)",
+        "rgba(54, 162, 235, 1)",
+        "rgba(255, 206, 86, 1)",
+      ],
+      borderWidth: 1,
+    },
+  ],
+};
+
 const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
   const [messageApi, contextHolder] = message.useMessage();
 
@@ -161,6 +185,7 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
 
   const [barChart1Data, setBarchart1Data] = useState(barChart1);
   const [barChart2Data, setBarchart2Data] = useState(barChart2);
+  const [pieChartData, setPieChartData] = useState(pieChart);
 
   const onSelectMonth = (month: string) => {
     const startDate = moment([moment().year(), labels.indexOf(month)]).format(
@@ -197,6 +222,16 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
     setBarchart2Data(barChart2Data);
   };
 
+  const setPieChart = (eventsByVenueType: any) => {
+    let labels = Object.keys(eventsByVenueType);
+    let values = labels.map((venueType) => {
+      return eventsByVenueType[venueType];
+    });
+    pieChartData["labels"] = labels;
+    pieChartData["datasets"][0]["data"] = values;
+    setPieChartData(pieChartData);
+  };
+
   const buildAmountByPaymentModes = (
     amountByPaymentMode: any,
     eventTransaction: any
@@ -226,9 +261,24 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
     }
     return eventsByDay;
   };
+
+  const buildEventsByVenueType = (
+    eventsByVenueType: any,
+    eventTransaction: any
+  ) => {
+    let venueType = eventTransaction.venueType;
+    if (venueType && !(venueType in eventsByVenueType)) {
+      eventsByVenueType[venueType] = 0;
+      eventsByVenueType[venueType] += 1;
+    } else {
+      eventsByVenueType[venueType] += 1;
+    }
+    return eventsByVenueType;
+  };
+
   const { data: eventsTransactions, isLoading } = useQuery<any>(
-    ["events_transactions", startDate, endDate, venueType],
-    () => fetchEventTransactions(startDate, endDate, venueType),
+    ["events_transactions", startDate, endDate],
+    () => fetchEventTransactions(startDate, endDate),
     {
       onSuccess(eventsTransactions) {
         let eventList: Array<String> = [];
@@ -236,12 +286,16 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
         let totalFee = 0;
         let eventsByDay: any = {};
         let amountByPaymentMode: any = {};
-        console.log(eventsTransactions);
+        let eventsByVenueType: any = {};
         eventsTransactions.map((eventTransaction: any) => {
           if (!eventList.includes(eventTransaction.eventBookingId)) {
             eventList.push(eventTransaction.eventBookingId);
             totalFee += eventTransaction.totalFee;
             eventsByDay = buildEventsByDays(eventsByDay, eventTransaction);
+            eventsByVenueType = buildEventsByVenueType(
+              eventsByVenueType,
+              eventTransaction
+            );
           }
 
           if (eventTransaction.paymentType)
@@ -256,6 +310,7 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
 
         setBarchart1(eventsByDay);
         setBarchart2(amountByPaymentMode);
+        setPieChart(eventsByVenueType);
         setEventsMetrics({
           totalEvents: eventList.length,
           totalFee: totalFee,
@@ -304,7 +359,7 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
                 onSelect={onSelectMonth}
               />
             </Col>
-            <Col md={8} lg={8}>
+            {/* <Col md={8} lg={8}>
               <Select
                 defaultValue="hall"
                 style={{ width: 150 }}
@@ -315,7 +370,7 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
                 ]}
                 onSelect={onVenueSelect}
               />
-            </Col>
+            </Col> */}
           </Row>
         </div>
         <div className="site-card-wrapper">
@@ -338,7 +393,25 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
           </Row>
         </div>
         <div>
-          <Row>
+          <Row style={{ justifyContent: "center" }}>
+            {pieChartData.datasets[0].data.length > 0 ? (
+              <Col md={24} lg={12}>
+                <Pie
+                  options={pieChartOptions}
+                  data={pieChartData}
+                  height={400}
+                  width={700}
+                  redraw={true}
+                  style={{
+                    marginRight: "40px",
+                    marginBottom: "40px",
+                    marginTop: "40px",
+                  }}
+                />
+              </Col>
+            ) : (
+              ""
+            )}
             <Col md={24} lg={12}>
               <Bar
                 options={barChart1Options}
@@ -346,9 +419,15 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
                 height={400}
                 width={700}
                 redraw={true}
-                style={{ marginRight: "40px" }}
+                style={{
+                  marginRight: "40px",
+                  marginBottom: "40px",
+                  marginTop: "40px",
+                }}
               />
             </Col>
+          </Row>
+          <Row style={{ justifyContent: "center" }}>
             <Col md={24} lg={12}>
               <Bar
                 options={barChart2Options}

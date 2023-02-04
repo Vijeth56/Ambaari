@@ -6,12 +6,11 @@ export default async function handler(
   res: NextApiResponse<any[] | Error>
 ) {
   try {
-    let { startDate, endDate, venueType } = JSON.parse(req.body);
-    if (startDate && endDate && venueType) {
+    let { startDate, endDate } = JSON.parse(req.body);
+    if (startDate && endDate) {
       let data = await db("events_transaction_view")
         .where("event_start", ">=", startDate)
-        .where("event_start", "<=", endDate)
-        .where("venue_type", venueType);
+        .where("event_start", "<=", endDate);
       data = data.map((transaction) => {
         return {
           eventType: transaction.eventType,
