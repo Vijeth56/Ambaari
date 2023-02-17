@@ -123,7 +123,7 @@ const barChart1 = {
   datasets: [
     {
       label: "Total Events",
-      data: [],
+      data: Array(),
       borderColor: "rgb(157, 99, 132)",
       backgroundColor: "rgba(157, 99, 132, 0.5)",
     },
@@ -131,11 +131,11 @@ const barChart1 = {
 };
 
 const barChart2 = {
-  labels: [],
+  labels: Array(),
   datasets: [
     {
       label: "Amount Paid",
-      data: [],
+      data: Array(),
       borderColor: "rgb(99, 99, 132)",
       backgroundColor: "rgba(99, 99, 132, 0.5)",
     },
@@ -147,7 +147,7 @@ const pieChart = {
   datasets: [
     {
       label: "No of events",
-      data: [],
+      data: Array(),
       backgroundColor: [
         "rgba(255, 99, 132, 0.2)",
         "rgba(54, 162, 235, 0.2)",
@@ -174,7 +174,6 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
     moment(startDate).endOf("month").format("YYYY-MM-DD HH:mm:ss")
   );
 
-  const [venueType, setVenueType] = useState("Hall");
   const [eventsMetrics, setEventsMetrics] = useState({
     totalEvents: 0,
     totalFee: 0,
@@ -195,10 +194,6 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
       .format("YYYY-MM-DD HH:mm:ss");
     setStartDate(startDate);
     setEndDate(endDate);
-  };
-
-  const onVenueSelect = (event: string) => {
-    setVenueType(event);
   };
 
   const setBarchart1 = (eventsByDate: any) => {
@@ -319,6 +314,7 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
       },
     }
   );
+
   return (
     <div className={styles.container}>
       {contextHolder}
@@ -358,18 +354,6 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
                 onSelect={onSelectMonth}
               />
             </Col>
-            {/* <Col md={8} lg={8}>
-              <Select
-                defaultValue="hall"
-                style={{ width: 150 }}
-                options={[
-                  { value: "Hall", label: "Hall" },
-                  { value: "Garden", label: "Garden" },
-                  { value: "H & G", label: "Hall+Garden" },
-                ]}
-                onSelect={onVenueSelect}
-              />
-            </Col> */}
           </Row>
         </div>
         <div>
