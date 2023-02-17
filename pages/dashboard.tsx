@@ -64,17 +64,16 @@ const fetchEventTransactions = async (startDate: String, endDate: String) => {
 };
 
 const pieChartOptions = {
-  responsive: false,
-  maintainAspectRatio: false,
+  responsive: true,
+  maintainAspectRatio: true,
 };
 const barChart1Options = {
-  responsive: false,
-  maintainAspectRatio: false,
+  responsive: true,
+  maintainAspectRatio: true,
   scales: {
     y: {
       min: 0,
-      max: 100,
-      stepSize: 20,
+      max: 10,
       title: {
         display: true,
         text: "Events",
@@ -90,8 +89,8 @@ const barChart1Options = {
 };
 
 const barChart2Options = {
-  responsive: false,
-  maintainAspectRatio: false,
+  responsive: true,
+  maintainAspectRatio: true,
   scales: {
     y: {
       min: 0,
@@ -373,67 +372,57 @@ const Dashboard = ({ signOut, user }: { signOut: any; user: any }) => {
             </Col> */}
           </Row>
         </div>
-        <div className="site-card-wrapper">
-          <Row wrap={false}>
-            <Col md={8} lg={8}>
-              <Card title="Total Events" bordered={false}>
+        <div>
+          <Row>
+            <Col span={8}>
+              <Card size="small" title="# Events" bordered={false}>
                 <b>{eventsMetrics.totalEvents}</b>
               </Card>
             </Col>
-            <Col md={8} lg={8}>
-              <Card title="Total Amount Paid" bordered={false}>
+            <Col span={8}>
+              <Card size="small" title="₹ Paid" bordered={false}>
                 <b>{eventsMetrics.totalAmountPaid}</b>
               </Card>
             </Col>
-            <Col md={8} lg={8}>
-              <Card title="Total Amount Pending" bordered={false}>
+            <Col span={8}>
+              <Card size="small" title="₹ Pending" bordered={false}>
                 <b>{eventsMetrics.totalAmountPending}</b>
               </Card>
             </Col>
           </Row>
-        </div>
-        <div>
           <Row style={{ justifyContent: "center" }}>
-            {pieChartData.datasets[0].data.length > 0 ? (
-              <Col md={24} lg={12}>
+            <Col sm={24} md={12} lg={12} style={{ marginTop: "48px" }}>
+              {pieChartData.datasets[0].data.length > 0 ? (
                 <Pie
                   options={pieChartOptions}
                   data={pieChartData}
-                  height={400}
-                  width={700}
+                  height={150}
                   redraw={true}
-                  style={{
-                    marginRight: "40px",
-                    marginBottom: "40px",
-                    marginTop: "40px",
-                  }}
                 />
-              </Col>
-            ) : (
-              ""
-            )}
-            <Col md={24} lg={12}>
+              ) : (
+                ""
+              )}
+            </Col>
+            <Col
+              sm={24}
+              md={12}
+              lg={12}
+              style={{
+                marginTop: "48px",
+              }}
+            >
               <Bar
                 options={barChart1Options}
                 data={barChart1Data}
-                height={400}
-                width={700}
+                height={300}
                 redraw={true}
-                style={{
-                  marginRight: "40px",
-                  marginBottom: "40px",
-                  marginTop: "40px",
-                }}
               />
             </Col>
-          </Row>
-          <Row style={{ justifyContent: "center" }}>
-            <Col md={24} lg={12}>
+            <Col sm={24} md={24} lg={12} style={{ marginTop: "48px" }}>
               <Bar
                 options={barChart2Options}
                 data={barChart2Data}
-                height={400}
-                width={700}
+                height={150}
                 redraw={true}
               />
             </Col>

@@ -22,22 +22,6 @@
     justify-content: left;
 }
 
-.footer {
-    display: flex;
-    flex: 1;
-    padding: 2rem 0;
-    border-top: 1px solid #eaeaea;
-    justify-content: center;
-    align-items: center;
-}
-
-.footer a {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-grow: 1;
-}
-
 .title {
     margin: 0;
     line-height: 1.15;
@@ -46,62 +30,11 @@
     text-decoration: none;
 }
 
-.title,
-.description {
+.title {
     text-align: center;
-}
-
-.description {
-    margin: 4rem 0;
-    line-height: 1.5;
-    font-size: 1.5rem;
-}
-
-.events {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.events .ant-badge-status {
-    width: 100%;
-    overflow: hidden;
-    font-size: 12px;
-    white-space: nowrap;
-    text-overflow: ellipsis;
 }
 
 .logo {
     height: 1em;
     margin-left: 0.5rem;
-}
-
-.radio {
-    display: flex;
-}
-
-.radio label {
-    margin-top: 2em;
-    flex: 1;
-    text-align: center;
-}
-
-@media (max-width: 600px) {
-    .grid {
-        width: 100%;
-        flex-direction: column;
-    }
-}
-
-@media (prefers-color-scheme: dark) {
-    .card,
-    .footer {
-        border-color: #222;
-    }
-    .code {
-        background: #111;
-    }
-    .logo img {
-        filter: invert(1);
-    }
 }
