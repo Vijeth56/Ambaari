@@ -1,7 +1,7 @@
 import { Button, message } from "antd";
 import { Select } from "antd";
 import Head from "next/head";
-import styles from "../styles/Home.module.css";
+import styles from "../styles/Dashboard.module.css";
 import { Card, Col, Row } from "antd";
 import { useQuery } from "react-query";
 import moment from "moment";
