@@ -403,6 +403,10 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
     }
   };
 
+  const openDashboard = () => {
+    router.push("/dashboard");
+  };
+
   return (
     <div className={styles.container}>
       {contextHolder}
@@ -424,19 +428,35 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
           Sign Out
         </Button>
         <h4 className={styles.title}>Ambaari Web Portal</h4>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          size="large"
-          onClick={() => setShowAddEventModal(true)}
-          style={{
-            maxWidth: "240px",
-            marginTop: "2em",
-            marginBottom: "2em",
-          }}
-        >
-          Add Event
-        </Button>
+        <div>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            size="large"
+            onClick={() => setShowAddEventModal(true)}
+            style={{
+              maxWidth: "240px",
+              marginTop: "2em",
+              marginBottom: "2em",
+              marginRight: "2em",
+            }}
+          >
+            Add Event
+          </Button>
+          <Button
+            type="primary"
+            size="large"
+            onClick={openDashboard}
+            style={{
+              maxWidth: "240px",
+              marginTop: "2em",
+              marginBottom: "2em",
+            }}
+          >
+            Dashboard
+          </Button>
+        </div>
+
         <Modal
           title="Event Info"
           open={showAddEventModal}
