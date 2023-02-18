@@ -9,7 +9,7 @@ exports.up = function (knex) {
       .integer("event_booking_id")
       .notNullable()
       .references("event_booking_id")
-      .inTable("event_booking");
+      .inTable("event_booking").onDelete('CASCADE');
     table.string("message").notNullable();
     table.integer("amount").notNullable();
     table.string("payment_type").notNullable();
