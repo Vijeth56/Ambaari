@@ -1,90 +1,181 @@
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import type { NextApiRequest, NextApiResponse } from "next";
 import { AddEventResponse } from "../../lib/models/AddEventResponse";
 import { db } from "../../lib/db";
+import { noSSR } from "next/dynamic";
+import { notDeepEqual } from "assert";
+import { View } from "@aws-amplify/ui-react";
+// import { user } from '../index.js';
+const user = 1;
 
-const vContraintMap = new Map<string, string>();
-vContraintMap.set("Hall", "((0, 0), 0.5)");
-vContraintMap.set("Garden", "((1, 1), 0.5)");
-vContraintMap.set("H & G", "((0, 0), 1)");
+
+
+type availableRooms = {
+  [room_details_id: number]: string;
+};
+type AllRoomsMap = {
+  [room_details_id: number]: string;
+};
+type RoomDetails = {
+  room_details_id: number;
+  room_type: string;
+};
+
+// get data from View
+const getAllocatedRoomsForRange = async (
+  roomType: string,
+  startDateTime: string,
+  endDateTime: string
+): Promise<number[]> => {
+  try {
+    const result = await db("advance_booking_view")
+      .select("room_details_id")
+      .where("room_type", "=", roomType)
+      .andWhere(function () {
+        this.where(function () {
+          this.where("booking_start", "<=", endDateTime)
+            .andWhere("booking_end", ">=", startDateTime);
+        }).orWhere(function () {
+          this.where("booking_start", ">=", startDateTime)
+            .andWhere("booking_start", "<", endDateTime);
+        }).orWhere(function () {
+          this.where("booking_end", ">", startDateTime)
+            .andWhere("booking_end", "<=", endDateTime);
+        });
+      });
+    return result.map((booking) => booking.room_details_id);
+  } catch (error) {
+    console.error("Error fetching allocated rooms:", error);
+    throw error;
+  }
+};
+
+
+// get room no from room_details table, get room_details_id instead of room_no
+
+const getRoomsByTenantId = async (tenantId: number): Promise<RoomDetails[]> => {
+  try {
+    const result = await db("room_details")
+      .select("room_details_id", "room_type")
+      .where("tenant_info_id", tenantId);
+
+    return result;
+  } catch (error) {
+    console.error("Error fetching rooms:", error);
+    throw error;
+  }
+};
+
+const getRoomDetailsIdFromRoomNo = async (roomNo: number): Promise<number> => {
+  try {
+    const result = await db("room_details")
+      .select("room_details_id")
+      .where("room_no", "=", roomNo)
+      .first(); // Assuming that there's only one record for a room number
+
+    return result ? result.room_details_id : -1;
+  } catch (error) {
+    console.error("Error fetching room details ID:", error);
+    throw error;
+  }
+};
+
+
+
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<AddEventResponse>
 ) {
   if (req.method === "POST") {
-    let data = req.body;
-    let { existingGuest } = data;
-    let trx;
+    const data = req.body;
     try {
-      trx = await db.transaction();
-      let guestInfoId = -1;
 
-      if (existingGuest) {
-        guestInfoId = data.guestInfoId;
-      } else {
-        let gResult = await trx("guest_info")
-          .insert({
-            name: data.name,
-            email: data.emailAddress,
-            mobile_no: data.mobileNo,
-            alt_mobile_no: data.altMobileNo,
-            postal_address: data.postalAddress,
-          })
-          .returning("guest_info_id");
+      const allocatedRooms = await getAllocatedRoomsForRange(data.roomType, data.dateTimeRange[0], data.dateTimeRange[1]);
 
-        guestInfoId = gResult[0].guest_info_id;
+      // Fetch rooms based on the given tenant_id
+      const rooms = await getRoomsByTenantId(user);
+
+      // Store the retrieved rooms in the allRooms map
+      const allRooms: AllRoomsMap = {};
+
+      rooms.forEach((room) => {
+        allRooms[room.room_details_id] = room.room_type;
+      });
+
+      // availableRooms = allRooms - allocatedRooms
+
+      const roomTypeToFilter = data.roomType;
+
+      const availableRooms: number[] = [];
+      Object.keys(allRooms).forEach((roomNo) => {
+        const roomNumber = Number(roomNo);
+        if (!allocatedRooms.includes(roomNumber) && allRooms[roomNumber] === roomTypeToFilter) {
+          availableRooms.push(roomNumber);
+        }
+      });
+
+      console.log("All Rooms:", allRooms);
+      console.log("Allocated Rooms:", allocatedRooms);
+      console.log("Available Rooms:", availableRooms);
+
+      const bookings = [];
+
+      if (data.roomNo === undefined || data.noOfRooms > 1) {
+        for (let i = 0; i < data.noOfRooms; i++) {
+
+          const eResult = await db("advance_booking")
+            .insert({
+              name: data.name,
+              mobile_no: data.mobileNo,
+              email_address: data.emailAddress,
+              room_details_id: availableRooms[Math.floor(Math.random() * availableRooms.length)],
+              booking_start: data.dateTimeRange[0],
+              booking_end: data.dateTimeRange[1],
+              tenant_id: user,
+            }).returning("adv_booking_id");
+          const adv_booking_id = eResult[0].adv_booking_id;
+          bookings.push(adv_booking_id);
+        }
+      }
+      else {
+        const roomDetailsId = await getRoomDetailsIdFromRoomNo(data.roomNo);
+        if (availableRooms.includes(roomDetailsId)) {
+          // Room is available, proceed with booking
+          const eResult = await db("advance_booking")
+            .insert({
+              name: data.name,
+              mobile_no: data.mobileNo,
+              email_address: data.emailAddress,
+              room_details_id: roomDetailsId,
+              booking_start: data.dateTimeRange[0],
+              booking_end: data.dateTimeRange[1],
+              tenant_id: 1,
+            })
+            .returning("adv_booking_id");
+          const adv_booking_id = eResult[0].adv_booking_id;
+          bookings.push(adv_booking_id);
+        } else {
+          console.log("Selected room is not available.");
+        }
       }
 
-      if (guestInfoId > 0) {
-        let eResult = await trx("event_booking")
-          .insert({
-            guest_info_id: guestInfoId,
-            event_type: data.eventType,
-            venue_type: data.venueType,
-            _venue: vContraintMap.get(data.venueType) || "",
-            event_start: data.dateTimeRange[0],
-            event_end: data.dateTimeRange[1],
-            total_fee: data.totalAmount,
-          })
-          .returning("event_booking_id");
 
-        const { event_booking_id } = eResult[0];
-        await trx.commit();
-        return res.status(200).send({
-          error: false,
-          msg: "New Event created!",
-          guestId: guestInfoId,
-          bookingId: event_booking_id,
-        });
+
+      // Send a response with a message that can be used on the client side
+      res.status(200).send({
+        error: false,
+        msg: "New Booking(s) created!",
+        // bookingId: bookings,
+      });
+
+
+      if (bookings.length > 0) {
+        console.log("New Booking(s) created! Booking IDs: " + bookings.join(", "));
       } else {
-        await trx.rollback();
-        return res.status(200).send({
-          error: true,
-          msg: "Error while processing guest details!",
-        });
+        console.log("Unexpected response from the server.");
       }
     } catch (err: any) {
-      await trx?.rollback();
-      if (
-        err?.constraint &&
-        err.constraint === "no_overlapping_times_for_venue"
-      ) {
-        return res.status(200).send({
-          error: true,
-          msg: "Venue is already booked for this time slot!",
-        });
-      } else if (
-        err?.constraint &&
-        err.constraint === "guest_info_mobile_no_unique"
-      ) {
-        return res.status(200).send({
-          error: true,
-          msg: "Mobile number is already taken!",
-        });
-      }
-
-      console.log(err);
+      console.error(err);
       return res.status(400).send({
         error: true,
         msg: "Some unknown error occurred! [Code: 100]",
@@ -97,3 +188,7 @@ export default async function handler(
     });
   }
 }
+
+
+
+

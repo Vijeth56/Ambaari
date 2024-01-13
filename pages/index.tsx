@@ -8,6 +8,9 @@ import { RangeValue } from "rc-picker/lib/interface";
 import { AddEventResponse } from "../lib/models/AddEventResponse";
 import { DeleteEventResponse } from "../lib/models/DeleteEventResponse";
 import { toINR } from "../lib/utils/NumberFormats";
+import { Select } from 'antd';
+const { Option } = Select;
+
 
 import {
   DatePicker,
@@ -37,6 +40,8 @@ import { useQuery, useMutation, useQueryClient } from "react-query";
 import { FetchUserResponse } from "../lib/models/FetchUserResponse";
 import { RangePickerProps } from "antd/es/date-picker";
 
+export const user = "1";
+
 const fetchCalendarEvents = async () => {
   const res = await fetch("/api/getCalendarEvents");
   let jsonResult = await res.json();
@@ -55,11 +60,11 @@ const fetchEvents = async (eventIds: number[]) => {
   return [];
 };
 
-const venueOptions = [
-  { label: "Hall", value: "Hall" },
-  { label: "Garden", value: "Garden" },
-  { label: "Hall + G", value: "H & G" },
-];
+// const venueOptions = [
+//   { label: "Hall", value: "Hall" },
+//   { label: "Garden", value: "Garden" },
+//   { label: "Hall + G", value: "H & G" },
+// ];
 
 type WindowDimentions = {
   width: number | undefined;
@@ -87,6 +92,7 @@ const useWindowDimensions = (): WindowDimentions => {
 };
 
 const Home = ({ signOut, user }: { signOut: any; user: any }) => {
+  // user = "1";
   const router = useRouter();
   const queryClient = useQueryClient();
   const { width, height } = useWindowDimensions();
@@ -97,9 +103,9 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   const [altMobileNo, setAltMobileNo] = useState<string>();
   const [name, setName] = useState<string>();
   const [emailAddress, setEmailAddress] = useState<string>();
-  const [postalAddress, setPostalAddress] = useState<string>();
-  const [eventType, setEventType] = useState<string>();
-  const [venueType, setVenueType] = useState("H & G");
+  const [noOfRooms, setNoOfRooms] = useState<number>();
+  const [roomNo, setRoomNo] = useState<number>();
+  const [roomType, setRoomType] = useState<string>();
   const [dateTimeRange, setDateTimeRange] = useState<RangeValue<Dayjs>>();
   const [totalAmount, setTotalAmount] = useState<number>();
   const [selectedValue, setSelectedValue] = useState<string>(() =>
@@ -108,17 +114,17 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   const [deleteEventForId, setDeleteEventForId] = useState<number>();
 
   interface EventSummaryType {
-    event_booking_id: number;
+    adv_booking_id: number;
     mobile_no: string;
-    alt_mobile_no: string;
+    // alt_mobile_no: string;
     name: string;
     email: string;
-    event_type: string;
-    venue_type: string;
-    event_start: Date;
-    event_end: Date;
-    postal_address: string;
-    total_fee: number;
+    room_type: string;
+    noOfRooms: number;
+    room_no: number;
+    booking_start: Date;
+    booking_end: Date;
+    // total_fee: number;
   }
 
   const [rGuestInfo, setRGuestInfo] = useState<any>();
@@ -193,34 +199,34 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
     }
   );
 
-  const onVenueTypeChange = ({ target: { value } }: RadioChangeEvent) => {
-    setVenueType(value);
-  };
 
-  const handleAddEvent = () => {
-    if (rGuestInfo) {
-      addEventMutation.mutate({
-        existingGuest: true,
-        guestInfoId: rGuestInfo.guest_info_id,
-        eventType,
-        venueType,
-        dateTimeRange,
-        totalAmount,
-      });
-    } else {
-      addEventMutation.mutate({
-        existingGuest: false,
-        name,
-        mobileNo,
-        altMobileNo,
-        emailAddress,
-        postalAddress,
-        eventType,
-        venueType,
-        dateTimeRange,
-        totalAmount,
-      });
-    }
+  const handleAddBooking = () => {
+    // if (rGuestInfo) {
+    //   addEventMutation.mutate({
+    //     existingGuest: true,
+    //     guestInfoId: rGuestInfo.guest_info_id,
+    //     roomType,
+    //     noOfRooms,
+    //     roomNo,
+    //     dateTimeRange,
+    //     totalAmount,
+    //   });
+    // } else {
+    addEventMutation.mutate({
+      existingGuest: false,
+      name,
+      mobileNo,
+      // altMobileNo,
+      emailAddress,
+      roomType,
+      noOfRooms,
+      roomNo,
+      dateTimeRange,
+      // totalAmount,
+    });
+    // }
+    // alert(name);
+    // alert(dateTimeRange);
     setShowAddEventModal(false);
   };
 
@@ -279,6 +285,8 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
     let listData: any[] = [];
     let { data } = calendarEventsQuery;
     let style: any = { padding: "6px" };
+    let availableRooms = 90; // Default value for available rooms
+    let allocatedRooms = 10; // Default value for allocated rooms
 
     if (data && Object.keys(data).length > 0) {
       let valueStr = value.format("DD-MM-YYYY");
@@ -315,6 +323,8 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
             content: `${description}`,
             bookingId: e.id,
           });
+          availableRooms -= e.noOfRooms;
+          allocatedRooms += e.noOfRooms;
         });
       }
     }
@@ -347,10 +357,65 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
         return [];
       }
     }
+
+    // // Create styles for the circular structures
+    // const circleContainerStyle: React.CSSProperties = {
+    //   display: "flex",
+    //   justifyContent: "center",
+    //   alignItems: "center",
+    //   height: "100%",
+    // };
+
+    // const circleStyle: React.CSSProperties = {
+    //   width: "30px",
+    //   height: "30px",
+    //   borderRadius: "50%",
+    //   display: "flex",
+    //   alignItems: "center",
+    //   justifyContent: "center",
+    //   margin: "5px 12px 30px",
+    //   color: "white",
+    // };
+
+    // const greenCircleStyle: React.CSSProperties = {
+    //   ...circleStyle,
+    //   backgroundColor: "#5D9C59",
+    // };
+
+    // const redCircleStyle: React.CSSProperties = {
+    //   ...circleStyle,
+    //   backgroundColor: "#D83F31",
+    // };
+
+    // if (width && width < 750) {
+    //   return (
+    //     <div style={{ ...circleContainerStyle, ...style }}>
+    //       <div style={greenCircleStyle}>
+    //         <span>{availableRooms}</span>
+    //       </div>
+    //       <div style={redCircleStyle}>
+    //         <span>{allocatedRooms}</span>
+    //       </div>
+    //     </div>
+    //   );
+    // } else {
+    //   return (
+    //     <div style={{ ...circleContainerStyle, ...style }}>
+    //       <div style={greenCircleStyle}>
+    //         <span>{availableRooms}</span>
+    //       </div>
+    //       <div style={redCircleStyle}>
+    //         <span>{allocatedRooms}</span>
+    //       </div>
+    //     </div>
+    //   );
+    // }
   };
 
   const onDateSelect = (value: Dayjs) => {
-    setSelectedValue(value.format("DD-MM-YYYY"));
+    const selectedDate = value.format("DD-MM-YYYY");
+    // console.log("Selected Date:", selectedDate);
+    setSelectedValue(selectedDate);
   };
 
   // eslint-disable-next-line arrow-body-style
@@ -441,7 +506,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
               marginRight: "2em",
             }}
           >
-            Add Event
+            Add Booking
           </Button>
           <Button
             type="primary"
@@ -458,9 +523,9 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
         </div>
 
         <Modal
-          title="Event Info"
+          title="Booking Info"
           open={showAddEventModal}
-          onOk={handleAddEvent}
+          onOk={handleAddBooking}
           onCancel={() => setShowAddEventModal(false)}
         >
           <AutoComplete
@@ -487,18 +552,11 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
               style={{ marginTop: "2em" }}
             />
           </AutoComplete>
-          <Input
-            placeholder="Alternate Mobile No:"
-            size="large"
-            disabled={rGuestInfo}
-            value={rGuestInfo ? rGuestInfo.alt_mobile_no : altMobileNo}
-            onChange={(e) => setAltMobileNo(e.target.value)}
-            style={{ marginTop: "2em" }}
-          />
+          
           <Input
             placeholder="Name"
             size="large"
-            style={{ marginTop: "2em" }}
+            style={{ marginTop: "4em" }}
             disabled={rGuestInfo}
             value={rGuestInfo ? rGuestInfo.name : name}
             onChange={(e) => setName(e.target.value)}
@@ -511,39 +569,68 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
             value={rGuestInfo ? rGuestInfo.email : emailAddress}
             onChange={(e) => setEmailAddress(e.target.value)}
           />
-          <Input
-            placeholder="Postal Address"
+          
+          <Select
+            placeholder="Room Type"
             size="large"
             style={{ marginTop: "2em" }}
-            disabled={rGuestInfo}
-            value={rGuestInfo ? rGuestInfo.postal_address : postalAddress}
-            onChange={(e) => setPostalAddress(e.target.value)}
+            onChange={(value) => setRoomType(value)}
+          >
+            <Option value="Supreme AC">Supreme AC</Option>
+            <Option value="Semi Suite">Semi Suite</Option>
+            <Option value="Non AC">Non AC</Option>
+            <Option value="Regency Suite">Regency Suite</Option>
+            <Option value="Suite Twin Deluxe">Suite Twin Deluxe</Option>
+            <Option value="Suite Double Deluxe">Suite Double Deluxe</Option>
+            <Option value="Family Deluxe Triple">Family Deluxe Triple</Option>
+
+          </Select>
+          <Input
+            placeholder="No Of Rooms"
+
+            inputMode="numeric"
+            style={{ marginTop: "2em" }}
+            value={noOfRooms}
+            onChange={(e) => {
+              let tRooms = Number.parseInt(e.target.value, 10);
+              if (isNaN(tRooms)) {
+                setNoOfRooms(undefined);
+              } else {
+                setNoOfRooms(tRooms);
+              }
+            }}
           />
           <Input
-            placeholder="Event Type"
-            size="large"
+            placeholder="Room No."
+
+            inputMode="numeric"
             style={{ marginTop: "2em" }}
-            onChange={(e) => setEventType(e.target.value)}
-          />
-          <Radio.Group
-            className={styles.radio}
-            options={venueOptions}
-            onChange={onVenueTypeChange}
-            value={venueType}
-            optionType="button"
-            buttonStyle="solid"
+            value={roomNo}
+            onChange={(e) => {
+              let tRoomNo = Number.parseInt(e.target.value, 10);
+              if (isNaN(tRoomNo)) {
+                setRoomNo(undefined);
+              } else {
+                setRoomNo(tRoomNo);
+              }
+            }}
           />
           <DatePicker.RangePicker
             size="large"
             disabledDate={disabledDate}
-            showTime
+            showTime={{
+              minuteStep: 30, // Set the minute step to 30
+              secondStep: 60,
+            }}
             use12Hours
-            format={"DD/MM/YY h a"}
+            format={"DD/MM/YY h mm a"}
             showNow
             style={{ width: "100%", marginTop: "2em" }}
-            onChange={(e) => setDateTimeRange(e)}
+            onChange={(e) => {
+              setDateTimeRange(e);
+            }}
           />
-          <Input
+          {/* <Input
             placeholder="Total Amount"
             size="large"
             inputMode="numeric"
@@ -557,7 +644,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
                 setTotalAmount(tAmount);
               }
             }}
-          />
+          /> */}
         </Modal>
         <Modal
           title="Event Details"
@@ -611,7 +698,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
                       size="small"
                       type="dashed"
                       onClick={() =>
-                        router.push(`/event?id=${item.event_booking_id}`)
+                        router.push(`/event?id=${item.adv_booking_id}`)
                       }
                     >
                       More
@@ -622,7 +709,7 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
                       size="small"
                       type="primary"
                       danger
-                      onClick={() => setDeleteEventForId(item.event_booking_id)}
+                      onClick={() => setDeleteEventForId(item.adv_booking_id)}
                     >
                       Delete
                     </Button>
@@ -631,24 +718,23 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
               >
                 <Skeleton avatar title={false} loading={false} active>
                   <List.Item.Meta
-                    title={`${item.name} (${item.event_type})`}
+                    title={`${item.name} (${item.room_type})`}
                     description={
                       <div
                         className=""
                         style={{ display: "flex", flexDirection: "column" }}
                       >
-                        <span>Venue: {item.venue_type}</span>
+                        <span>Venue: {item.room_type}</span>
                         <span>
                           Duration: &nbsp;
-                          {dayjs(item.event_start).format("DD/MM h a")}
+                          {dayjs(item.booking_start).format("DD/MM h a")}
                           &nbsp;to&nbsp;
-                          {dayjs(item.event_end).format("DD/MM h a")}
+                          {dayjs(item.booking_end).format("DD/MM h a")}
                         </span>
                         <span>
-                          Mob: {item.mobile_no} / {item.alt_mobile_no}
+                          Mob: {item.mobile_no}
                         </span>
                         <span>Email: {item.email}</span>
-                        <span>Total Fee: {toINR(item.total_fee)}</span>
                       </div>
                     }
                   />
@@ -700,4 +786,4 @@ const Home = ({ signOut, user }: { signOut: any; user: any }) => {
   );
 };
 
-export default withAuthenticator(Home);
+export default Home;

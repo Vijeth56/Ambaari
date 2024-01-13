@@ -590,7 +590,7 @@ const Event = ({ signOut, user }: { signOut: any; user: any }) => {
                         style={{ marginTop: "12px", marginBottom: "12px" }}
                       >
                         <Descriptions
-                          title="Event Info"
+                          title="Booking Info"
                           bordered
                           column={1}
                           extra={

@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '../.env.local' });
+// require('dotenv').config({ path: '../.env.local' });
 require('dotenv').config({ path: '../.env.prod' });
 
 module.exports = {
@@ -6,7 +6,7 @@ module.exports = {
   development: {
     client: 'postgresql',
     connection: {
-      database: 'venuedb',
+      database: 'ambaari',
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD
     },
@@ -15,14 +15,15 @@ module.exports = {
       max: 10
     },
     migrations: {
-      tableName: 'knex_migrations'
+      tableName: 'knex_migrations',
+      directory: './migrations',
     }
   },
 
   production: {
     client: 'postgresql',
     connection: {
-      database: 'venuedb',
+      database: 'ambaari',
       host: process.env.PROD_DB_HOST,
       user: process.env.PROD_DB_USER,
       password: process.env.PROD_DB_PASSWORD
@@ -32,7 +33,8 @@ module.exports = {
       max: 10
     },
     migrations: {
-      tableName: 'knex_migrations'
+      tableName: 'knex_migrations',
+      directory: './migrations',
     }
   }
 };
